@@ -155,7 +155,7 @@ if (artButton && karyaCard) {
   artButton.addEventListener("click", (e) => {
     e.preventDefault();
     karyaCard.style.setProperty("background-image", "url('art.png')", "important");
-    setTimeout(() => window.location.href = "zodiac.html", 100);
+    setTimeout(() => window.location.href = "post.html", 100);
   });
 }
 const songButton = document.querySelector(".music-card .button");
