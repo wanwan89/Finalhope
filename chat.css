@@ -621,3 +621,17 @@ transition: transform 0.3s ease-out, left 0.3s ease-out;
     z-index: 10;          /* Pastikan logo di atas elemen lain */
     filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.2)); /* Tambah bayangan tipis agar elegan */
 }
+.message-info {
+    margin-top: -5px; /* Narik info ke atas sedikit supaya nempel ke teks */
+    padding-bottom: 2px;
+}
+
+.chat-message.self .message-info {
+    color: rgba(255, 255, 255, 0.7); /* Biar teks jam di chat sendiri agak transparan putih */
+}
+
+.status-icon {
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+}
