@@ -181,20 +181,26 @@ body {
     margin-bottom: 40px;
 }
 
-.sidebar-nav a {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    color: #fff;
-    text-decoration: none;
-    padding: 15px 10px;
-    border-radius: 10px;
-    margin-bottom: 5px;
-    transition: 0.2s;
+/* Pastikan container nav-item membungkus ke bawah */
+.sidebar a, .nav-item {
+    display: flex;          /* Membuat icon dan teks sejajar horizontal */
+    align-items: center;    /* Icon dan teks rata tengah secara vertikal */
+    padding: 12px 20px;     /* Memberi ruang klik yang nyaman */
+    text-decoration: none;  /* Menghapus garis bawah biru */
+    color: #ffffff;         /* Mengubah warna teks jadi putih */
+    gap: 15px;              /* Memberi jarak antara icon dan teks */
+    transition: 0.3s;       /* Efek halus saat di-hover */
 }
 
-.sidebar-nav a:hover {
-    background: rgba(255,255,255,0.05);
+/* Warna saat menu disentuh atau aktif */
+.sidebar a:hover, .nav-item.active {
+    background: rgba(255, 255, 255, 0.1);
+    color: #1DA1F2;         /* Warna biru cerah saat aktif */
+}
+
+/* Ukuran Icon */
+.material-icons {
+    font-size: 20px;
 }
 
 /* ================================= 
