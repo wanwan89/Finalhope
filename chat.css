@@ -602,3 +602,10 @@ html, body {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }
 }
+#chat-messages {
+  display: flex;
+  flex-direction: column; /* Chat mengalir ke bawah */
+  overflow-y: auto;
+  padding: 15px;
+  gap: 10px;
+}

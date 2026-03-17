@@ -313,7 +313,6 @@ function renderMessage(msg) {
   const msgEl = document.createElement("div");
   msgEl.id = `msg-${msg.id}`;
   msgEl.className = `chat-message ${msg.user_id === currentUser.id ? "self" : "other"}`;
-
   const currentUsername = msg.profiles?.username || msg.username || "User";
   const avatarUrl = msg.profiles?.avatar_url || msg.avatar || "profile.png";
   const currentRole = msg.profiles?.role || msg.role || "user";
@@ -416,8 +415,6 @@ function renderMessage(msg) {
 async function loadMessages() {
   if (!messagesEl) return;
 
-  messagesEl.innerHTML = "";
-
   const { data, error } = await supabase
     .from("messages")
     .select(`
@@ -426,17 +423,19 @@ async function loadMessages() {
       profiles:user_id(username, avatar_url, role)
     `)
     .eq("room_id", currentRoomId)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: true }); // PESAN LAMA (ATAS) -> PESAN BARU (BAWAH)
 
-  if (error) {
-    console.error(error);
-    return;
+  if (error) return console.error(error);
+
+  messagesEl.innerHTML = "";
+  if (data) {
+    data.forEach(msg => renderMessage(msg));
   }
+  
+  // Beri sedikit delay agar browser selesai merender sebelum scroll
+  setTimeout(scrollToBottom, 100);
 
-  data?.forEach(msg => renderMessage(msg));
-  scrollToBottom();
-
-  // Tandai pesan masuk sebagai read
+  // Tandai sebagai read
   await supabase
     .from("messages")
     .update({ status: 'read' })
@@ -451,21 +450,35 @@ async function Message() {
   if (!text) return;
 
   const replyTo = inputEl.dataset.replyTo || null;
-  Btn.disabled = true;
+  // Buat ID sementara agar kita bisa menandai pesan ini nanti
+  const tempId = "temp-" + Date.now(); 
+
+  // --- LANGKAH 1: TAMPILKAN LANGSUNG DI LAYAR (INSTAN) ---
+  const optimisticMsg = {
+    id: tempId,
+    message: text,
+    user_id: currentUser.id,
+    username: myUsername,
+    avatar: sideAvatar?.src || "profile.png",
+    created_at: new Date().toISOString(),
+    room_id: currentRoomId,
+    status: 'sending' // Munculkan status sedang mengirim (opsional)
+  };
+  
+  renderMessage(optimisticMsg);
+  scrollToBottom();
+  
+  // Reset input & suara detik itu juga
+  inputEl.value = "";
+  window.cancelReply();
+  sendSound.play().catch(() => {});
 
   try {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("username, avatar_url, role")
-      .eq("id", currentUser.id)
-      .single();
-
+    // --- LANGKAH 2: KIRIM KE DATABASE DI BACKGROUND ---
     const { error } = await supabase.from("messages").insert([{
       message: text,
       user_id: currentUser.id,
-      username: profile?.username || "Guest",
-      avatar: profile?.avatar_url || "profile.png",
-      role: profile?.role || "user",
+      username: myUsername,
       room_id: currentRoomId,
       reply_to: replyTo,
       status: 'sent'
@@ -473,95 +486,80 @@ async function Message() {
 
     if (error) throw error;
 
-    sendSound.play().catch(() => { });
-
-    inputEl.value = "";
-    window.cancelReply();
-
-    localStorage.setItem(`last_read_${currentRoomId}`, new Date().toISOString());
-
-    await loadChatHistory();
-    scrollToBottom();
-
+    // Jika berhasil, kita tidak perlu hapus tempId karena akan dihandle Realtime
   } catch (err) {
-    console.error("Gagal kirim pesan:", err);
+    console.error("Gagal kirim:", err);
     showToast("Gagal mengirim pesan", "error");
-  } finally {
-    Btn.disabled = false;
+    // Jika gagal total, hapus pesan bohongan tadi dari layar
+    const failEl = document.getElementById(`msg-${tempId}`);
+    if (failEl) failEl.remove();
   }
 }
 
+// Pastikan ini terpasang agar tombolnya jalan
 if (Btn) Btn.onclick = Message;
-if (inputEl) {
-  inputEl.onkeypress = (e) => {
-    if (e.key === "Enter") Message();
-  };
-}
+
 
 // ===== Realtime Messages =====
 function initRealtimeMessages() {
-  supabase.channel('messages-channel')
-    .on('postgres_changes', {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'messages'
-    }, async payload => {
-      if (payload.new.room_id === currentRoomId) {
-        let newMsg = payload.new;
+  // Pastikan kita tidak membuat banyak channel sekaligus
+  supabase.removeAllChannels();
 
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("username, avatar_url, role")
-          .eq("id", newMsg.user_id)
-          .single();
+  const channel = supabase.channel('messages-room')
+    .on('postgres_changes', { 
+      event: 'INSERT', 
+      schema: 'public', 
+      table: 'messages',
+      filter: `room_id=eq.${currentRoomId}` // Filter langsung di server agar lebih cepat
+    }, async (payload) => {
+      const newMsg = payload.new;
 
-        newMsg.profiles = profile || {
-          avatar_url: "profile.png",
-          username: "Guest",
-          role: "user"
-        };
-
-        if (newMsg.reply_to) {
-          const { data: repliedMsg } = await supabase
-            .from("messages")
-            .select("id, username, message")
-            .eq("id", newMsg.reply_to)
-            .single();
-
-          newMsg.reply_to_msg = repliedMsg;
+      // 1. Jika pesan dari diri sendiri (untuk HP pengirim)
+      if (newMsg.user_id === currentUser.id) {
+        const tempEl = document.querySelector(`[id^="msg-temp-"]`);
+        if (tempEl) {
+          tempEl.id = `msg-${newMsg.id}`;
+          const icon = tempEl.querySelector('.status-icon');
+          if (icon) icon.innerHTML = getStatusIcon('sent');
         }
-
-        if (newMsg.user_id !== currentUser.id) {
-          receiveSound.play().catch(() => { });
-
-          // langsung tandai read kalau sedang buka room ini
-          await supabase
-            .from("messages")
-            .update({ status: 'read' })
-            .eq("id", newMsg.id);
-        }
-
-        renderMessage(newMsg);
-        scrollToBottom();
+        return;
       }
 
-      // refresh sidebar kalau room privat melibatkan user ini
-      if (payload.new.room_id !== 'room-1' && payload.new.room_id.includes(currentUser.id)) {
-        loadChatHistory();
+      // 2. Jika pesan dari orang lain (untuk HP penerima)
+      // Gunakan data payload langsung dulu agar pesan cepat muncul
+      const fallbackProfile = { 
+        username: newMsg.username || "User", 
+        avatar_url: "profile.png" 
+      };
+
+      // Tampilkan pesan dulu (Tanpa Await) biar instan di HP penerima
+      newMsg.profiles = fallbackProfile;
+      renderMessage(newMsg);
+      scrollToBottom();
+      receiveSound.play().catch(() => {});
+
+      // Baru kemudian update profilnya jika berhasil diambil
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("username, avatar_url, role")
+        .eq("id", newMsg.user_id)
+        .single();
+      
+      if (profile) {
+        const msgEl = document.getElementById(`msg-${newMsg.id}`);
+        if (msgEl) {
+          msgEl.querySelector('.username').innerHTML = `${profile.username}${getBadge(profile.role)}`;
+          msgEl.querySelector('.avatar').src = profile.avatar_url || "profile.png";
+        }
       }
     })
-    .on('postgres_changes', {
-      event: 'UPDATE',
-      schema: 'public',
-      table: 'messages'
-    }, payload => {
-      const iconEl = document.querySelector(`#msg-${payload.new.id} .status-icon`);
-
-      if (iconEl && payload.new.user_id === currentUser.id) {
-        iconEl.innerHTML = getStatusIcon(payload.new.status);
+    .subscribe((status) => {
+      console.log("Status Realtime:", status);
+      if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+        // Reconnect otomatis jika koneksi mati
+        setTimeout(initRealtimeMessages, 3000);
       }
-    })
-    .subscribe();
+    });
 }
 
 // ===== Sidebar Toggle =====
@@ -1058,6 +1056,7 @@ if (btnCariDoiActual) {
     }, 2500);
   };
 }
+
 
 // ===== Init =====
 async function init() {
