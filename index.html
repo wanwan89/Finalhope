@@ -4,6 +4,15 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Let's Grow With Hope</title>
+<link rel="manifest" href="/manifest.json">
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="HopeHype">
+<link rel="apple-touch-icon" href="/icon-192.png">
+
+<meta name="theme-color" content="#1DB954">
+
 <link rel="icon" type="book.png" href="book.png">
         <link
             href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800;900&display=swap"
@@ -213,5 +222,19 @@
             </div>
         </div>
     </div>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/service-worker.js')
+        .then((reg) => {
+          console.log('HopeHype PWA: Berhasil didaftarkan!', reg.scope);
+        })
+        .catch((err) => {
+          console.log('HopeHype PWA: Gagal daftar', err);
+        });
+    });
+  }
+</script>
+
 </body>
 </html>
