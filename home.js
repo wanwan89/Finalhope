@@ -1,29 +1,26 @@
-// =======================
-// FORCE LOAD MIDTRANS SDK
-// =======================
+let isMidtransLoading = false; // Flag baru
+
 function loadMidtrans() {
-  if (window.snap) {
-    console.log("✅ Midtrans Snap ready.");
-    return;
-  }
+  if (window.snap) return;
+  if (isMidtransLoading) return; // Stop jika sedang loading
 
-  if (document.querySelector('script[src*="snap.js"]')) {
-    console.log("ℹ️ Midtrans SDK already loading...");
-    return;
-  }
-
-  console.log("🔄 Memuat ulang SDK Midtrans...");
+  isMidtransLoading = true;
   const script = document.createElement("script");
   script.src = "https://app.sandbox.midtrans.com/snap/snap.js";
   script.setAttribute("data-client-key", "SB-Mid-client-G2wOVrrTwcffYhkC");
   script.async = true;
-  script.onload = () => console.log("✅ Midtrans Snap loaded successfully!");
-  script.onerror = () => console.error("❌ Gagal memuat Midtrans. Cek koneksi/Adblock.");
+  
+  script.onload = () => {
+    console.log("✅ Midtrans Snap loaded!");
+    isMidtransLoading = false;
+  };
+  script.onerror = () => {
+    console.error("❌ Gagal memuat Midtrans");
+    isMidtransLoading = false;
+  };
   document.head.appendChild(script);
 }
 
-// Jalankan saat start
-loadMidtrans();
 
 // =======================
 // DYNAMIC BADGE SYSTEM
@@ -546,17 +543,23 @@ async function checkPopup() {
 async function loadUser() {
   try {
     const {
-      data: { user },
-      error: userError,
-    } = await db.auth.getUser();
+      data: { session },
+      error: sessionError,
+    } = await db.auth.getSession();
 
-    if (userError) throw userError;
+    if (sessionError) throw sessionError;
+
+    const user = session?.user;
 
     const buyBtn = document.getElementById("buyVerified");
     const usernameEl = document.getElementById("username");
     const avatarEl = document.getElementById("avatar");
 
-    if (!user) return;
+    // Kalau belum login, jangan error
+    if (!user) {
+      if (usernameEl) usernameEl.textContent = "Guest";
+      return;
+    }
 
     const { data: profile, error: profileError } = await db
       .from("profiles")
@@ -597,9 +600,15 @@ async function loadUser() {
     }
   } catch (err) {
     console.error("loadUser error:", err);
+
+    // Kalau session hilang, anggap user guest aja
+    if (err.message === "Auth session missing!") {
+      const usernameEl = document.getElementById("username");
+      if (usernameEl) usernameEl.textContent = "Guest";
+      return;
+    }
   }
 }
-
 // =======================
 // TOMBOL PRO + LIVECHAT
 // =======================
@@ -614,8 +623,13 @@ if (buyBtnElement && bSheet) {
 
     bSheet.style.display = "flex";
 
-    if (window.LiveChatWidget) {
-      window.LiveChatWidget.call("hide_widget");
+    // PERBAIKAN: Cek dulu apakah fungsi call ada
+    if (window.LiveChatWidget && typeof window.LiveChatWidget.call === 'function') {
+      try {
+        window.LiveChatWidget.call("hide_widget");
+      } catch (err) {
+        console.warn("LiveChat hide failed:", err);
+      }
     }
 
     setTimeout(() => {
@@ -624,12 +638,18 @@ if (buyBtnElement && bSheet) {
   };
 }
 
+// Ganti bagian bOverlay.onclick kamu menjadi ini:
 if (bOverlay && bSheet) {
   bOverlay.onclick = () => {
     bSheet.classList.remove("active");
 
-    if (window.LiveChatWidget) {
-      window.LiveChatWidget.call("maximize_widget");
+    // Gunakan pengecekan yang lebih aman
+    if (window.LiveChatWidget && typeof window.LiveChatWidget.call === 'function') {
+      try {
+        window.LiveChatWidget.call("maximize_widget");
+      } catch (e) {
+        console.warn("LiveChat maximize failed", e);
+      }
     }
 
     setTimeout(() => {
@@ -647,41 +667,57 @@ async function updateAuthMenu() {
     if (!logoutBtn) return;
 
     const {
-      data: { user },
+      data: { session },
       error,
-    } = await db.auth.getUser();
+    } = await db.auth.getSession();
 
     if (error) throw error;
+
+    const user = session?.user;
 
     logoutBtn.textContent = user ? "Logout" : "Login";
   } catch (err) {
     console.error("updateAuthMenu error:", err);
+
+    // fallback aman kalau session hilang
+    const logoutBtn = document.getElementById("logoutBtn");
+    if (logoutBtn) logoutBtn.textContent = "Login";
   }
 }
-
 document.getElementById("logoutBtn")?.addEventListener("click", async () => {
   try {
     const {
-      data: { user },
-      error,
-    } = await db.auth.getUser();
+      data: { session },
+    } = await db.auth.getSession();
 
-    if (error) throw error;
+    // Kalau ada session, baru sign out
+    if (session) {
+      const { error } = await db.auth.signOut();
 
-    if (user) {
-      await db.auth.signOut();
+      // Kalau error selain session missing, baru tampilkan
+      if (error && error.message !== "Auth session missing!") {
+        throw error;
+      }
+    }
+
+    // Tetap bersihkan storage & redirect
+    localStorage.clear();
+    sessionStorage.clear();
+    window.location.href = "login.html";
+  } catch (err) {
+    console.error("Logout error:", err);
+
+    // Kalau session missing, anggap logout berhasil
+    if (err.message === "Auth session missing!") {
       localStorage.clear();
       sessionStorage.clear();
       window.location.href = "index.html";
-    } else {
-      window.location.href = "login.html";
+      return;
     }
-  } catch (err) {
-    console.error("Logout error:", err);
+
     showToast("Gagal logout", err.message, "error");
   }
 });
-
 // =======================
 // INIT APP
 // =======================
