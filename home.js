@@ -349,14 +349,8 @@ if (avatarUpload && avatarPreview) {
 if (saveSettings) {
   saveSettings.addEventListener("click", async () => {
     try {
-      const {
-        data: { user },
-        error: userError,
-      } = await db.auth.getUser();
-
-      if (userError) throw userError;
-
-      if (!user) {
+      const { data: { user }, error: userError } = await db.auth.getUser();
+      if (userError || !user) {
         showToast("Belum login", "Silakan login dulu", "warning");
         return;
       }
@@ -368,55 +362,47 @@ if (saveSettings) {
       }
 
       const avatarToSave = uploadedAvatarData || selectedAvatar || null;
+      const updatePayload = { username: newUsername };
+      if (avatarToSave) updatePayload.avatar_url = avatarToSave;
 
-      const updatePayload = {
-        username: newUsername,
-      };
+      // UPDATE & LANGSUNG AMBIL DATA TERBARU
+      const { data: updatedProfile, error } = await db
+        .from("profiles")
+        .update(updatePayload)
+        .eq("id", user.id)
+        .select("username, role, avatar_url") // Ambil data kembalian
+        .single();
 
-      if (avatarToSave) {
-        updatePayload.avatar_url = avatarToSave;
+      if (error) {
+        if (error.code === '23505' || error.message.includes('unique')) {
+          showToast("Gagal Update", "Username sudah terpakai!", "error");
+          return;
+        }
+        throw error;
       }
 
-      const { error } = await db
-  .from("profiles")
-  .update(updatePayload)
-  .eq("id", user.id);
-
-if (error) {
-  console.error("Error Detail:", error);
-  // Kode 23505 adalah standar Postgres untuk Unique Violation
-  if (error.code === '23505' || error.message.includes('unique')) {
-    showToast("Gagal Update", "Username '" + newUsername + "' sudah ada yang punya!", "error");
-    return; // STOP! Jangan tutup modal, jangan ganti tampilan
-  }
-  throw error;
-}
-
-
+      // UPDATE UI
       const usernameEl = document.getElementById("username");
       const avatarEl = document.getElementById("avatar");
 
-      const { data: profile, error: profileError } = await db
-        .from("profiles")
-        .select("role, avatar_url")
-        .eq("id", user.id)
-        .single();
-
-      if (profileError) {
-        console.warn("Gagal ambil role setelah update:", profileError.message);
-      }
-
       if (usernameEl) {
-        usernameEl.innerHTML = `${newUsername} ${getUserBadge(profile?.role)}`;
+        usernameEl.innerHTML = `${updatedProfile.username} ${getUserBadge(updatedProfile.role)}`;
       }
 
-      if (avatarEl && (avatarToSave || profile?.avatar_url)) {
-        avatarEl.src = (avatarToSave || profile?.avatar_url) + "?t=" + Date.now();
-      }
+      if (avatarEl && updatedProfile.avatar_url) {
+  const cacheBuster = `?t=${Date.now()}`;
+  
+  const finalSrc = updatedProfile.avatar_url.startsWith("data:image") 
+    ? updatedProfile.avatar_url 
+    : updatedProfile.avatar_url + cacheBuster;
 
+  avatarEl.src = finalSrc;
+  
+  if (avatarPreview) avatarPreview.src = finalSrc;
+}
       if (settingsModal) settingsModal.classList.remove("active");
+      showToast("Profil diperbarui", "Foto dan username berhasil diubah!", "success");
 
-      showToast("Profil berhasil diperbarui", "Perubahan tersimpan secara instan", "success");
     } catch (err) {
       console.error("Gagal update:", err.message);
       showToast("Gagal update profil", err.message, "error");
@@ -542,24 +528,12 @@ async function checkPopup() {
 // =======================
 async function loadUser() {
   try {
-    const {
-      data: { session },
-      error: sessionError,
-    } = await db.auth.getSession();
+    const { data: { session }, error: sessionError } = await db.auth.getSession();
+    if (sessionError || !session) return;
 
-    if (sessionError) throw sessionError;
-
-    const user = session?.user;
-
-    const buyBtn = document.getElementById("buyVerified");
+    const user = session.user;
     const usernameEl = document.getElementById("username");
     const avatarEl = document.getElementById("avatar");
-
-    // Kalau belum login, jangan error
-    if (!user) {
-      if (usernameEl) usernameEl.textContent = "Guest";
-      return;
-    }
 
     const { data: profile, error: profileError } = await db
       .from("profiles")
@@ -567,46 +541,33 @@ async function loadUser() {
       .eq("id", user.id)
       .single();
 
-    if (profileError) {
-      console.warn("Profile belum ada / gagal diambil:", profileError.message);
-
-      if (usernameEl) {
-        usernameEl.textContent = user.email?.split("@")[0] || "Guest";
-      }
-
-      return;
-    }
-
-    if (profile) {
+    if (profile && !profileError) {
+      // Username + badge
       if (usernameEl) {
         usernameEl.innerHTML = `${profile.username || user.email.split("@")[0]} ${getUserBadge(profile.role)}`;
       }
 
-      if (avatarEl && profile.avatar_url) {
-        avatarEl.src = profile.avatar_url + "?t=" + Date.now();
-      }
+      // Avatar FIX
+      if (avatarEl) {
+        if (profile.avatar_url) {
+          const avatarSrc = profile.avatar_url.startsWith("data:image")
+            ? profile.avatar_url
+            : profile.avatar_url + "?t=" + Date.now();
 
-      if (buyBtn) {
-        buyBtn.style.display = "inline-flex";
+          avatarEl.src = avatarSrc;
 
-        if (profile.role === "verified" || profile.role === "admin") {
-          buyBtn.style.background = "linear-gradient(90deg, #00d2ff 0%, #3a7bd5 100%)";
-          buyBtn.style.boxShadow = "0 4px 10px rgba(58, 123, 213, 0.3)";
+          if (avatarPreview) {
+            avatarPreview.src = avatarSrc;
+          }
         } else {
-          buyBtn.style.background = "linear-gradient(90deg, #FF512F 0%, #DD2476 100%)";
-          buyBtn.style.boxShadow = "0 4px 10px rgba(221, 36, 118, 0.3)";
+          // fallback default avatar kalau kosong
+          avatarEl.src = "default-avatar.png";
+          if (avatarPreview) avatarPreview.src = "default-avatar.png";
         }
       }
     }
   } catch (err) {
     console.error("loadUser error:", err);
-
-    // Kalau session hilang, anggap user guest aja
-    if (err.message === "Auth session missing!") {
-      const usernameEl = document.getElementById("username");
-      if (usernameEl) usernameEl.textContent = "Guest";
-      return;
-    }
   }
 }
 // =======================
