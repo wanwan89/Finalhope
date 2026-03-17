@@ -90,11 +90,19 @@ async function fetchPosts(category = 'all') {
     }
 
     posts.forEach(post => {
-      const card = document.createElement("div");
-      card.className = "card";
-      card.dataset.creator = post.creator_id;
+  const card = document.createElement("div");
+  card.className = "card";
+  card.dataset.creator = post.creator_id;
 
-      card.innerHTML = `
+  // --- LOGIKA TANGGAL ---
+  const dateObj = new Date(post.created_at);
+  const formattedDate = dateObj.toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+
+  card.innerHTML = `
   <div class="slider">
     <img src="${post.image_url || 'karya.png'}" class="active">
   </div>
@@ -107,6 +115,12 @@ async function fetchPosts(category = 'all') {
     </h2>
     <p class="bio">${post.bio || ''}</p>
     
+    <div class="post-date-wrapper" style="margin-bottom: 8px;">
+      <span style="font-size: 11px; color: rgba(255,255,255,0.6); font-weight: 400;">
+        Diunggah pada ${formattedDate}
+      </span>
+    </div>
+
     <div class="actions">
       <a href="linda.html?id=${post.creator_id}" class="primary">Detail</a>
 
@@ -124,8 +138,9 @@ async function fetchPosts(category = 'all') {
     </div>
   </div>`;
 
-      gallery.appendChild(card);
-    });
+  gallery.appendChild(card);
+});
+
 
     // RE-INIT Fitur Interaktif
     initLikeButtons();
