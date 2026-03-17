@@ -490,60 +490,39 @@ transition: transform 0.3s ease-out, left 0.3s ease-out;
 .sidebar-overlay {
   z-index: 10000;
 }
-/* Container di Tengah Atas */
+/* =========================
+   TOAST COMPACT MOBILE FIX
+========================= */
 #toast-container {
-    position: fixed;
-    top: 0; /* Mulai dari paling atas */
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 10000;
-    display: flex;
-    flex-direction: column;
-    align-items: center; /* Memastikan isi toast tetap di tengah */
-    gap: 10px;
-    pointer-events: none;
-    width: 100%; /* Menjamin area tengah */
-    padding-top: 20px; /* Jarak aman dari notch/ponsel */
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 99999;
+  width: calc(100% - 24px);
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
 }
 
-/* Gaya Slide-Down Glass Hitam */
-.toast {
-    background: rgba(10, 10, 10, 0.75); /* Hitam Glass */
-    backdrop-filter: blur(15px);      /* Efek blur kaca pekat */
-    -webkit-backdrop-filter: blur(15px);
-    color: #ffffff;
-    padding: 12px 25px;
-    border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
-    font-size: 13px;
-    font-weight: 500;
-    min-width: 200px;
-    max-width: 320px;
-    text-align: center;
-    pointer-events: auto;
-    
-    /* Animasi meluncur dari atas ke bawah */
-    animation: slideDownFull 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
-    transition: all 0.4s ease;
+.toast-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  color: #1f2937;
+  border-radius: 20px;
+  padding: 12px 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  transform: translateY(-20px) scale(0.96);
+  transition: all 0.28s ease;
+  pointer-events: auto;
+  min-height: 64px;
 }
 
-/* Warna aksen bawah (Glow Neon) */
-.toast.success { border-bottom: 2px solid #00ffcc; }
-.toast.error   { border-bottom: 2px solid #ff4757; }
-.toast.info    { border-bottom: 2px solid #00d2ff; }
-
-/* Keyframe Slide Down */
-@keyframes slideDownFull {
-    0% {
-        opacity: 0;
-        transform: translateY(-100%); /* Mulai dari luar layar atas */
-    }
-    100% {
-        opacity: 1;
-        transform: translateY(0); /* Berhenti di posisi normal */
-    }
-}
 /* Animasi Muncul Pop-up */
 @keyframes popIn {
   0% { transform: scale(0.8); opacity: 0; }

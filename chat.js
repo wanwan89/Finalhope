@@ -65,26 +65,32 @@ function openSidebar() {
   if (overlay) overlay.style.display = 'block';
 }
 
-function showToast(message, type = "info") {
-  let toastContainer = document.getElementById("toast-container");
-
-  if (!toastContainer) {
-    toastContainer = document.createElement("div");
-    toastContainer.id = "toast-container";
-    document.body.appendChild(toastContainer);
+function showToast(message) {
+  let container = document.getElementById("toast-container");
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "toast-container";
+    document.body.appendChild(container);
   }
 
   const toast = document.createElement("div");
-  toast.className = `toast ${type}`;
+  toast.className = "toast-card";
   toast.innerText = message;
-  toastContainer.appendChild(toast);
+  container.appendChild(toast);
 
+  // animasi muncul
+  requestAnimationFrame(() => {
+    toast.style.opacity = "1";
+    toast.style.transform = "translateY(0) scale(1)";
+  });
+
+  // hilang otomatis
   setTimeout(() => {
     toast.style.opacity = "0";
-    setTimeout(() => toast.remove(), 500);
+    toast.style.transform = "translateY(-20px) scale(0.96)";
+    setTimeout(() => toast.remove(), 280);
   }, 3000);
 }
-
 function getStatusIcon(status) {
   if (status === 'read') {
     return '<span style="color:#34b7f1; font-size:14px; margin-left:2px;">✔✔</span>';

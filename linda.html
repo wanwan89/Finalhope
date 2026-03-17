@@ -192,26 +192,30 @@ const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Ambil slug dari URL (?creator=mobi)
 const params = new URLSearchParams(window.location.search);
-const slug = params.get("creator")?.toLowerCase();
-
+const slug = params.get("id")?.toLowerCase();
 async function loadCreatorData() {
-    if (!slug) {
-        document.body.innerHTML = "<h2 style='padding:40px'>Parameter creator tidak ditemukan.</h2>";
+    const params = new URLSearchParams(window.location.search);
+    const userSlug = params.get("id")?.toLowerCase();
+
+    if (!userSlug) {
+        document.body.innerHTML = "<h2 style='padding:40px'>Username tidak ditemukan di URL.</h2>";
         return;
     }
 
+    // PAKAI .eq('slug', userSlug) karena di database kamu nama kolomnya adalah 'slug'
     const { data, error } = await _supabase
         .from('creators')
         .select('*')
-        .eq('slug', slug)
+        .eq('slug', userSlug) 
         .single();
 
     if (error || !data) {
-        document.body.innerHTML = "<h2 style='padding:40px'>Data Kreator tidak ditemukan di database.</h2>";
+        console.error("Kesalahan Supabase:", error);
+        document.body.innerHTML = `<h2 style='padding:40px'>Kreator "${userSlug}" tidak ditemukan.</h2>`;
         return;
     }
 
-    // Mapping Data ke HTML
+    // Mapping Data ke HTML (Tetap sama seperti sebelumnya)
     document.getElementById('topName').textContent = data.name;
     document.getElementById('name').textContent = data.name;
     document.getElementById('bio').textContent = data.bio;

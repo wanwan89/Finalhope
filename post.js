@@ -95,33 +95,35 @@ async function fetchPosts(category = 'all') {
       card.dataset.creator = post.creator_id;
 
       card.innerHTML = `
-        <div class="slider">
-          <img src="${post.image_url || 'karya.png'}" class="active">
-        </div>
-        <div class="overlay">
-          <h2 class="name">${post.name || post.creator_id} 
-            <span class="verified">
-              <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#1DA1F2"/><path d="M7 12.5l3 3 7-7" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </span>
-          </h2>
-          <p class="bio">${post.bio || ''}</p>
-          <div class="stats">
-            <div>⭐ ${post.rating || '5.0'}</div>
-            <div>${post.date_day || ''}</div> 
-            <div>${post.date_year || ''}</div> 
-          </div>
-          <div class="actions action-icons">
-            <a href="linda.html?creator=${post.creator_id}" class="primary">Detail</a>
-            <button class="icon-btn like-btn" data-post="${post.id}">
-              <svg viewBox="0 0 24 24" class="icon heart"><path d="M12.1 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3 9.24 3 10.91 3.81 12 5.09 13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5 22 12.28 18.6 15.36 13.55 20.04z"/></svg>
-              <span class="like-count">0</span>
-            </button>
-            <button class="icon-btn comment-toggle" data-post="${post.id}">
-              <svg viewBox="0 0 24 24" class="icon comment-icon"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>
-              <span class="comment-count">0</span>
-            </button>
-          </div>
-        </div>`;
+  <div class="slider">
+    <img src="${post.image_url || 'karya.png'}" class="active">
+  </div>
+  <div class="overlay">
+    <h2 class="name" onclick="window.location.href='data.html?id=${post.creator_id}'">
+      ${post.name || post.creator_id} 
+      <span class="verified">
+        <svg width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#1DA1F2"/><path d="M7 12.5l3 3 7-7" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+    </h2>
+    <p class="bio">${post.bio || ''}</p>
+    
+    <div class="actions">
+      <a href="linda.html?id=${post.creator_id}" class="primary">Detail</a>
+
+      <div class="engagement-group">
+        <button class="icon-btn like-btn" data-post="${post.id}">
+          <svg viewBox="0 0 24 24" class="icon heart"><path d="M12.1 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3 9.24 3 10.91 3.81 12 5.09 13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5 22 12.28 18.6 15.36 13.55 20.04z"/></svg>
+          <span class="like-count">0</span>
+        </button>
+        
+        <button class="icon-btn comment-toggle" data-post="${post.id}">
+          <svg viewBox="0 0 24 24" class="icon comment-icon"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>
+          <span class="comment-count">0</span>
+        </button>
+      </div>
+    </div>
+  </div>`;
+
       gallery.appendChild(card);
     });
 
@@ -142,42 +144,41 @@ async function fetchPosts(category = 'all') {
 function initComments() {
   const modal = document.getElementById("commentModal");
   if (!modal) return;
+
   const list = modal.querySelector(".comment-list");
   const input = modal.querySelector(".comment-input");
 
   document.querySelectorAll(".comment-toggle").forEach(btn => {
     const newBtn = btn.cloneNode(true);
     btn.parentNode.replaceChild(newBtn, btn);
-    newBtn.addEventListener("click", async () => {
-      if (!currentUser) { openLogin(); return; }
-      currentPostId = parseInt(newBtn.dataset.post);
-      modal.classList.add("active");
-      list.innerHTML = "<li>Loading...</li>";
-      
-      const { data } = await supabaseClient
-        .from("comments")
-        .select("*, profiles(username, avatar_url, role)")
-        .eq("post_id", currentPostId)
-        .order("created_at", { ascending: true });
 
-      list.innerHTML = data?.length ? "" : "<li style='text-align:center; padding:20px; color:#aaa;'>Belum ada komentar.</li>";
-      data?.forEach(c => list.appendChild(createComment(c, !!c.parent_id)));
-    });
+    newBtn.addEventListener("click", async () => {
+  if (!currentUser) {
+    openLogin();
+    return;
+  }
+
+  currentPostId = parseInt(newBtn.dataset.post);
+  modal.classList.add("active");
+  list.innerHTML = "<li style='color:#aaa; text-align:center; padding:20px;'>Loading...</li>";
+
+  await loadCommentsStructured();
+});
   });
 
   input.onkeydown = async (e) => {
     if (e.key === "Enter" && input.value.trim()) {
-      const content = input.value;
+      const content = input.value.trim();
       const savedReplyTo = replyTo;
       const savedReplyUsername = replyToUsername;
 
       input.value = "";
       input.placeholder = "Mengirim...";
 
-      const { error } = await supabaseClient.from("comments").insert({ 
-        post_id: currentPostId, 
-        user_id: currentUser.id, 
-        content: content,
+      const { error } = await supabaseClient.from("comments").insert({
+        post_id: currentPostId,
+        user_id: currentUser.id,
+        content,
         parent_id: savedReplyTo ? parseInt(savedReplyTo) : null,
         reply_to_username: savedReplyUsername || null
       });
@@ -186,28 +187,71 @@ function initComments() {
       replyToUsername = null;
       input.placeholder = "Tulis komentar...";
 
-      if (!error) updateCommentCount(currentPostId);
+      if (!error) {
+        await updateCommentCount(currentPostId);
+        await loadCommentsStructured();
+      } else {
+        console.error("Gagal kirim komentar:", error.message);
+      }
     }
   };
 }
-
 function createComment(comment, isReply) {
   const div = document.createElement("div");
   div.className = isReply ? "comment-item reply" : "comment-item";
   const p = comment.profiles;
-  
+
+  // =======================
+  // HITUNG WAKTU KOMENTAR
+  // =======================
+  let timeText = "";
+  if (comment.created_at) {
+    const now = new Date();
+    const created = new Date(comment.created_at);
+    const diffSec = Math.floor((now - created) / 1000);
+
+    if (diffSec < 60) {
+      timeText = `${diffSec}s`;
+    } else if (diffSec < 3600) {
+      timeText = `${Math.floor(diffSec/60)}m`;
+    } else if (diffSec < 86400) {
+      timeText = `${Math.floor(diffSec/3600)}j`;
+    } else {
+      timeText = `${created.getDate()}/${created.getMonth()+1}`;
+    }
+  }
+
+  // LINK PROFIL: data.html?id=username
+  const profileLink = `data.html?id=${p?.username || ''}`;
+
   div.innerHTML = `
-    <div class="comment-left"><img class="comment-avatar" src="${p?.avatar_url || 'https://via.placeholder.com/40'}" /></div>
+    <div class="comment-left">
+      <img class="comment-avatar" 
+           src="${p?.avatar_url || 'https://via.placeholder.com/40'}" 
+           onclick="window.location.href='${profileLink}'"
+           style="cursor:pointer;">
+    </div>
     <div class="comment-right">
-      <div class="comment-header">
-        <span class="comment-username">${p?.username || 'User'} ${getUserBadge(p?.role)}</span>
-        ${comment.reply_to_username ? `<span class="reply-tag">@${comment.reply_to_username}</span>` : ""}
+      <div class="comment-topline">
+        <span class="comment-username" 
+              onclick="window.location.href='${profileLink}'"
+              style="cursor:pointer; hover:underline;">
+          ${p?.username || 'User'} ${getUserBadge(p?.role)}
+        </span>
+        <span class="comment-time">${timeText}</span>
       </div>
-      <div class="comment-text">${comment.content}</div>
+
+      <div class="comment-text">
+        ${comment.reply_to_username ? `<span class="reply-tag">@${comment.reply_to_username}</span> ` : ""}
+        ${comment.content}
+      </div>
+
       <div class="comment-actions">
-        <span class="reply-btn" data-id="${comment.id}">Reply</span>
+        <span class="reply-btn" data-id="${comment.id}">Balas</span>
       </div>
-    </div>`;
+    </div>
+  `;
+
   return div;
 }
 
@@ -224,6 +268,71 @@ function initReplyClick() {
         input.focus(); 
       }
     }
+  });
+}
+async function loadCommentsStructured() {
+  const modal = document.getElementById("commentModal");
+  const list = modal?.querySelector(".comment-list");
+  if (!list || !currentPostId) return;
+
+  const { data, error } = await supabaseClient
+    .from("comments")
+    .select("*, profiles(username, avatar_url, role)")
+    .eq("post_id", currentPostId)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    list.innerHTML = "<li style='text-align:center; padding:20px; color:red;'>Gagal memuat komentar.</li>";
+    console.error(error.message);
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    list.innerHTML = "<li style='text-align:center; padding:20px; color:#aaa;'>Belum ada komentar.</li>";
+    return;
+  }
+
+  list.innerHTML = "";
+
+  const parentComments = data.filter(c => !c.parent_id);
+  const replies = data.filter(c => c.parent_id);
+
+  parentComments.forEach(parent => {
+    const wrap = document.createElement("div");
+    wrap.className = "comment-thread";
+
+    // parent comment
+    wrap.appendChild(createComment(parent, false));
+
+    // replies milik parent ini
+    const childReplies = replies.filter(r => r.parent_id == parent.id);
+
+    if (childReplies.length > 0) {
+      const toggleBtn = document.createElement("div");
+      toggleBtn.className = "view-replies-btn";
+      toggleBtn.textContent = `Lihat balasan (${childReplies.length})`;
+
+      const replyWrap = document.createElement("div");
+      replyWrap.className = "reply-group";
+      replyWrap.style.display = "none";
+
+      childReplies.forEach(reply => {
+        replyWrap.appendChild(createComment(reply, true));
+      });
+
+      toggleBtn.addEventListener("click", () => {
+        const isHidden = replyWrap.style.display === "none";
+        replyWrap.style.display = isHidden ? "block" : "none";
+        toggleBtn.textContent = isHidden
+          ? "Sembunyikan balasan"
+          : `Lihat balasan (${childReplies.length})`;
+      });
+
+      wrap.appendChild(toggleBtn);
+      wrap.appendChild(replyWrap);
+    }
+
+    list.appendChild(wrap);
   });
 }
 
@@ -331,8 +440,23 @@ function initAuth() {
 
 function openLogin() { document.getElementById("loginPopup").style.display = "flex"; }
 function initCloseButtons() {
-  document.querySelector(".comment-close")?.addEventListener("click", () => document.getElementById("commentModal").classList.remove("active"));
-  document.querySelector(".close-login")?.addEventListener("click", () => document.getElementById("loginPopup").style.display = "none");
+  const commentModal = document.getElementById("commentModal");
+  const commentBox = commentModal?.querySelector(".comment-box");
+
+  document.querySelector(".comment-close")?.addEventListener("click", () => {
+    commentModal.classList.remove("active");
+  });
+
+  // Klik area gelap = tutup
+  commentModal?.addEventListener("click", (e) => {
+    if (!commentBox.contains(e.target)) {
+      commentModal.classList.remove("active");
+    }
+  });
+
+  document.querySelector(".close-login")?.addEventListener("click", () => {
+    document.getElementById("loginPopup").style.display = "none";
+  });
 }
 function initRealtime() {
   supabaseClient.channel("comments-live").on("postgres_changes", { event: "INSERT", schema: "public", table: "comments" }, async (payload) => {

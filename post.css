@@ -261,74 +261,207 @@ body{
   opacity:0.8;
 }
  
-/* ===== COMMENT MODAL FIX ===== */
-
-.comment-modal {
+/* =========================
+   COMMENT SHEET STYLE
+========================= */
+#commentModal {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: none;
-  justify-content: center;
-  align-items: center;
-  background: rgba(0,0,0,0.7);
-  z-index: 9999;
-}
-
-.comment-modal.active {
-  display: flex !important;
-}
-
-.comment-popup {
-  background: #1a1a28;
-  padding: 20px;
-  border-radius: 16px;
-  width: 90%;
-  max-width: 400px;
-}
-
-.comment-header {
+  inset: 0;
+  background: rgba(0,0,0,0.45);
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 9999;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .25s ease, visibility .25s ease;
 }
 
-.comment-input {
+#commentModal.active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+#commentModal .comment-box {
   width: 100%;
-  padding: 10px;
-  border-radius: 8px;
-  border: none;
-  outline: none;
-  background: #2a2a3a;
+  max-width: 500px;
+  height: 78vh;
+  background: #111;
+  border-radius: 22px 22px 0 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(100%);
+  transition: transform .35s ease;
+  box-shadow: 0 -12px 30px rgba(0,0,0,.4);
+}
+
+#commentModal.active .comment-box {
+  transform: translateY(0);
+}
+
+#commentModal .comment-box::before {
+  content: "";
+  width: 48px;
+  height: 5px;
+  background: rgba(255,255,255,.25);
+  border-radius: 999px;
+  margin: 10px auto 8px;
+  display: block;
+}
+
+#commentModal .comment-header {
   color: #fff;
-  margin-bottom: 10px;
+  text-align: center;
+  font-weight: 700;
+  padding: 10px 16px 14px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  position: relative;
 }
 
-.comment-list {
-  max-height: 300px;
+#commentModal .comment-close {
+  position: absolute;
+  right: 14px;
+  top: 6px;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+#commentModal .comment-list {
+  flex: 1;
   overflow-y: auto;
+  padding: 10px 14px 16px;
 }
 
+/* Thread */
+.comment-thread {
+  margin-bottom: 16px;
+}
+
+/* Komentar utama / reply */
 .comment-item {
-  padding: 8px 0;
-  border-bottom: 1px solid #333;
+  display: flex;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.comment-item.reply {
+  margin-left: 42px;
+  opacity: 0.95;
+}
+
+.comment-left {
+  flex-shrink: 0;
+}
+
+.comment-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.comment-item.reply .comment-avatar {
+  width: 30px;
+  height: 30px;
+}
+
+.comment-right {
+  flex: 1;
+  min-width: 0;
+}
+
+.comment-topline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.comment-username {
+  color: #fff;
+  font-weight: 600;
   font-size: 14px;
 }
 
-.close-comment {
-  background: none;
-  border: none;
-  color: white;
-  font-size: 18px;
-  cursor: pointer;
-}
-.like-btn.liked {
-  color: #ff2e63;
-  animation: popLike 0.3s ease;
+.comment-time {
+  color: #8e8e8e;
+  font-size: 12px;
 }
 
+.comment-text {
+  color: #f1f1f1;
+  font-size: 14px;
+  line-height: 1.45;
+  margin-top: 2px;
+  word-break: break-word;
+}
+
+.reply-tag {
+  color: #4da3ff;
+  font-weight: 600;
+}
+
+.comment-actions {
+  margin-top: 4px;
+}
+
+.reply-btn {
+  color: #9aa0a6;
+  font-size: 13px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.reply-btn:hover {
+  color: #fff;
+}
+
+/* Tombol lihat balasan */
+.view-replies-btn {
+  margin-left: 48px;
+  margin-top: 4px;
+  margin-bottom: 6px;
+  color: #8ab4f8;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+
+.reply-group {
+  margin-top: 6px;
+}
+
+/* Input bawah */
+.comment-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border-top: 1px solid rgba(255,255,255,.08);
+  background: #111;
+}
+
+.comment-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: #1d1d1d;
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: 999px;
+  font-size: 14px;
+}
+
+.comment-input::placeholder {
+  color: #888;
+}
 @keyframes popLike {
   0% { transform: scale(1); }
   50% { transform: scale(1.3); }
@@ -881,4 +1014,68 @@ color:#fff;
   border-radius: 50%;
   margin-left: 10px;
   box-shadow: 0 0 10px var(--accent-blue); /* Efek cahaya biru */
+}
+.comment-username:hover {
+    text-decoration: underline;
+    color: var(--primary-blue);
+}
+.comment-avatar:active {
+    transform: scale(0.95);
+}
+.name {
+    display: flex;
+    align-items: center;
+    gap: 6px; /* Jarak antara nama dan badge */
+    white-space: nowrap; /* Biar gak pindah baris */
+}
+
+.verified {
+    display: inline-flex;
+    flex-shrink: 0; /* Biar badge-nya gak gepeng kalau nama kepanjangan */
+}
+
+/* Biar bio dan rating di bawahnya gak ikutan geser ke samping */
+.overlay {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+/* Container utama untuk tombol */
+.actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Detail di kiri, sisanya di kanan */
+    margin-top: 12px;
+    width: 100%;
+}
+
+/* Grup untuk Like dan Komentar */
+.engagement-group {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+/* Standarisasi tombol ikon */
+.icon-btn {
+    background: none;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    padding: 0;
+    color: white;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+}
+
+.icon-btn svg {
+    width: 22px;
+    height: 22px;
+    transition: transform 0.2s;
+}
+
+.icon-btn:active svg {
+    transform: scale(0.8); /* Efek membal saat diklik */
 }
