@@ -116,9 +116,44 @@ body{
 
 /* ===========IMAGE =========== */
 
-.slider img{ 
-  width:100%; 
-  display:block;
+/* Container gambar */
+.slider {
+  position: relative;
+  width: 100%;
+  background: #252525; /* Warna dasar kalau gambar telat muat */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* Gambar utama */
+.slider img {
+  width: 100%;
+  height: auto; /* Biar tinggi ngikutin lebar asli gambar */
+  display: block;
+  object-fit: cover; /* Menjaga proporsi kalau kamu tentukan height tetap */
+}
+
+/* Watermark diperkecil dan nempel di pojok kiri atas */
+.watermark-overlay {
+  position: absolute;
+  top: 5px;          /* Jarak tipis dari atas */
+  left: 5px;         /* Jarak tipis dari kiri */
+  width: 90px;       /* Ukuran diperkecil (sebelumnya ~140px) */
+  height: auto;
+  opacity: 0.8;      /* Opasitas pas agar tidak terlalu mencolok */
+  pointer-events: none; /* Biar tetap bisa klik/long press gambarnya */
+  z-index: 10;       /* Pastikan di atas gambar utama */
+  
+  /* Bayangan halus biar kalau fotonya putih tetap kontras */
+  filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.4));
+}
+
+.watermark-overlay img {
+  width: 100%;
+  height: auto;
+  display: block;
 }
 
 /* ===========OVERLAY =========== */

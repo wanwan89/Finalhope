@@ -105,7 +105,12 @@ async function fetchPosts(category = 'all') {
   card.innerHTML = `
   <div class="slider">
     <img src="${post.image_url || 'karya.png'}" class="active">
+    
+    <div class="watermark-overlay">
+      <img src="watermark.svg" alt="watermark">
+    </div>
   </div>
+  
   <div class="overlay">
     <h2 class="name" onclick="window.location.href='data.html?id=${post.creator_id}'">
       ${post.name || post.creator_id} 
@@ -140,7 +145,6 @@ async function fetchPosts(category = 'all') {
 
   gallery.appendChild(card);
 });
-
 
     // RE-INIT Fitur Interaktif
     initLikeButtons();
