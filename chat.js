@@ -14,10 +14,13 @@ let currentRoomId = 'room-1';
 let currentReplyId = null;
 let currentUser = null;
 let myUsername = "Guest";
+let myRole = "user";
 let presenceChannel = null;
-let typingTimeout;
+let messageChannel = null;
+let typingTimeout = null;
 let isCurrentlyTyping = false;
 let selectedMessageId = null;
+let isFirstMessageLoad = true; // ✅ WAJIB TAMBAH INI
 
 // ===== DOM =====
 const messagesEl = document.getElementById("chat-messages");
@@ -65,6 +68,18 @@ function openSidebar() {
   if (overlay) overlay.style.display = 'block';
 }
 
+function escapeHtml(str = "") {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function formatTime(dateString) {
+  const d = new Date(dateString);
+  return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+}
+
 function showToast(message) {
   let container = document.getElementById("toast-container");
   if (!container) {
@@ -78,29 +93,100 @@ function showToast(message) {
   toast.innerText = message;
   container.appendChild(toast);
 
-  // animasi muncul
   requestAnimationFrame(() => {
     toast.style.opacity = "1";
     toast.style.transform = "translateY(0) scale(1)";
   });
 
-  // hilang otomatis
   setTimeout(() => {
     toast.style.opacity = "0";
     toast.style.transform = "translateY(-20px) scale(0.96)";
     setTimeout(() => toast.remove(), 280);
   }, 3000);
 }
-function getStatusIcon(status) {
-  if (status === 'read') {
-    return '<span style="color:#34b7f1; font-size:14px; margin-left:2px;">✔✔</span>';
-  }
-  if (status === 'delivered') {
-    return '<span style="color:#aaa; font-size:14px; margin-left:2px;">✔✔</span>';
-  }
-  return '<span style="color:#aaa; font-size:14px; margin-left:2px;">✔</span>';
-}
 
+// 👇 TARUH DI SINI PERSIS
+function showChatLoading() {
+  if (!messagesEl) return;
+
+  messagesEl.innerHTML = `
+    <div class="chat-loading-screen">
+
+      <div class="skeleton-msg left">
+        <div class="skeleton-avatar shimmer"></div>
+        <div class="skeleton-bubble">
+          <div class="shimmer skeleton-line w1"></div>
+          <div class="shimmer skeleton-line w2"></div>
+          <div class="shimmer skeleton-line w3"></div>
+        </div>
+      </div>
+
+      <div class="skeleton-msg right">
+        <div class="skeleton-bubble me">
+          <div class="shimmer skeleton-line w4"></div>
+          <div class="shimmer skeleton-line w5"></div>
+        </div>
+      </div>
+
+      <div class="skeleton-msg left">
+        <div class="skeleton-avatar shimmer"></div>
+        <div class="skeleton-bubble typing-bubble">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
+
+      <div class="loading-chat-hint">
+        Menyambungkan percakapan...
+      </div>
+    </div>
+  `;
+}
+function getStatusIcon(status) {
+  switch (status) {
+    case 'sending':
+      return `
+        <span class="status-icon sending">
+          <span class="sending-dot">.</span>
+          <span class="sending-dot">.</span>
+          <span class="sending-dot">.</span>
+        </span>
+      `;
+
+    case 'sent':
+      return `
+        <span class="status-icon sent" title="Terkirim">
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 8.5L6.2 11.5L13 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+      `;
+
+    case 'delivered':
+      return `
+        <span class="status-icon delivered" title="Terkirim ke perangkat">
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M1.8 8.5L5 11.5L11.8 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M5.8 8.5L9 11.5L15 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+      `;
+
+    case 'read':
+      return `
+        <span class="status-icon read" title="Dibaca">
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M1.8 8.5L5 11.5L11.8 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M5.8 8.5L9 11.5L15 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+      `;
+
+    default:
+      return '';
+  }
+}
 function getBadge(role) {
   if (!role) return "";
   role = role.toLowerCase().trim();
@@ -126,6 +212,12 @@ function getBadge(role) {
   return "";
 }
 
+function getPartnerIdFromRoom(roomId) {
+  if (!roomId.startsWith("pv_")) return null;
+  const participants = roomId.replace("pv_", "").split("_");
+  return participants.find(id => id !== currentUser?.id) || null;
+}
+
 // ===== Global window funcs =====
 window.cancelReply = function () {
   currentReplyId = null;
@@ -149,7 +241,7 @@ window.closeBioModal = () => {
 
 window.copyMyID = (id) => {
   navigator.clipboard.writeText(id).then(() => {
-    showToast("ID berhasil disalin: #" + id, "success");
+    showToast("ID berhasil disalin: #" + id);
 
     const idEl = document.getElementById("my-unique-id");
     if (idEl) {
@@ -159,7 +251,7 @@ window.copyMyID = (id) => {
 
     if (navigator.vibrate) navigator.vibrate(50);
   }).catch(() => {
-    showToast("Gagal menyalin ID", "error");
+    showToast("Gagal menyalin ID");
   });
 };
 
@@ -198,12 +290,13 @@ async function requireLogin() {
   currentUser = { id: session.user.id };
 
   const { data: myProfile } = await supabase
-    .from("profiles")
-    .select("username")
-    .eq("id", session.user.id)
-    .single();
+  .from("profiles")
+  .select("username, role")
+  .eq("id", session.user.id)
+  .single();
 
-  myUsername = myProfile?.username || session.user.user_metadata?.username || session.user.email || "Guest";
+myUsername = myProfile?.username || session.user.user_metadata?.username || session.user.email || "Guest";
+myRole = myProfile?.role || "user";
   console.log("Identitas saya di chat:", myUsername);
   return true;
 }
@@ -212,7 +305,12 @@ async function requireLogin() {
 async function initPresence() {
   if (!currentUser) return;
 
-  presenceChannel = supabase.channel('room-1', {
+  if (presenceChannel) {
+    await supabase.removeChannel(presenceChannel);
+    presenceChannel = null;
+  }
+
+  presenceChannel = supabase.channel('presence-room-1', {
     config: { presence: { key: myUsername } }
   });
 
@@ -252,27 +350,32 @@ async function initPresence() {
   });
 
   if (inputEl) {
-    inputEl.addEventListener("input", async () => {
-      if (!presenceChannel) return;
+    inputEl.removeEventListener("input", handleTypingInput);
+    inputEl.addEventListener("input", handleTypingInput);
+  }
+}
 
-      if (!isCurrentlyTyping) {
-        isCurrentlyTyping = true;
-        await presenceChannel.track({
-          isTyping: true,
-          online_at: new Date().toISOString()
-        });
-      }
+async function handleTypingInput() {
+  if (!presenceChannel) return;
 
-      clearTimeout(typingTimeout);
-      typingTimeout = setTimeout(async () => {
-        isCurrentlyTyping = false;
-        await presenceChannel.track({
-          isTyping: false,
-          online_at: new Date().toISOString()
-        });
-      }, 3000);
+  if (!isCurrentlyTyping) {
+    isCurrentlyTyping = true;
+    await presenceChannel.track({
+      isTyping: true,
+      online_at: new Date().toISOString()
     });
   }
+
+  clearTimeout(typingTimeout);
+  typingTimeout = setTimeout(async () => {
+    isCurrentlyTyping = false;
+    if (presenceChannel) {
+      await presenceChannel.track({
+        isTyping: false,
+        online_at: new Date().toISOString()
+      });
+    }
+  }, 3000);
 }
 
 // ===== Online users =====
@@ -313,35 +416,42 @@ function renderMessage(msg) {
   const msgEl = document.createElement("div");
   msgEl.id = `msg-${msg.id}`;
   msgEl.className = `chat-message ${msg.user_id === currentUser.id ? "self" : "other"}`;
+
   const currentUsername = msg.profiles?.username || msg.username || "User";
   const avatarUrl = msg.profiles?.avatar_url || msg.avatar || "profile.png";
   const currentRole = msg.profiles?.role || msg.role || "user";
   const sticker = msg.sticker_url;
   const statusIcon = msg.user_id === currentUser.id ? getStatusIcon(msg.status || 'sent') : "";
 
+  const replyHtml = msg.reply_to_msg ? `
+    <div class="reply-preview" onclick="scrollToMessage('${msg.reply_to_msg.id}')"
+         style="font-size:11px; color:#555; background:rgba(0,0,0,0.05); padding:5px; border-left:3px solid #0088cc; margin-bottom:5px; border-radius:4px; cursor:pointer;">
+      <strong>${escapeHtml(msg.reply_to_msg.username || "User")}</strong>: ${escapeHtml((msg.reply_to_msg.message || "").slice(0, 30))}...
+    </div>` : "";
+
+  const contentHtml = sticker
+    ? `<img src="${sticker}" style="width:100px;height:100px;border-radius:12px;object-fit:cover;">`
+    : escapeHtml(msg.message || "");
+
   msgEl.innerHTML = `
-    <img class="avatar" src="${avatarUrl}" onerror="this.src='profile.png'">
-    <div class="content" style="position: relative; min-width: 80px; transition: transform 0.2s ease;">
-      <div class="username">${currentUsername}${getBadge(currentRole)}</div>
+  <img class="avatar" src="${avatarUrl}" onerror="this.src='profile.png'">
+  <div class="content" style="position: relative; min-width: 80px; transition: transform 0.2s ease;">
+    <div class="username">${escapeHtml(currentUsername)}${getBadge(currentRole)}</div>
 
-      ${msg.reply_to_msg ? `
-        <div class="reply-preview" onclick="scrollToMessage('${msg.reply_to_msg.id}')"
-             style="font-size:11px; color:#555; background:rgba(0,0,0,0.05); padding:5px; border-left:3px solid #0088cc; margin-bottom:5px; border-radius:4px; cursor:pointer;">
-          <strong>${msg.reply_to_msg.username}</strong>: ${(msg.reply_to_msg.message || "").slice(0, 30)}...
-        </div>` : ""}
+    ${replyHtml}
 
-      <div class="text" style="${msg.message === 'Pesan ini telah dihapus' ? 'font-style:italic;color:#aaa;' : ''} padding-bottom: 12px;">
-        ${sticker ? `<img src="${sticker}" style="width:100px;height:100px;border-radius:12px;object-fit:cover;">` : (msg.message || "")}
-      </div>
-
-      <div class="message-info" style="position: absolute; bottom: 4px; right: 8px; display:flex; align-items:center; gap:2px;">
-        <span class="timestamp" style="font-size:9px; opacity:0.5;">
-          ${new Date(msg.created_at).getHours().toString().padStart(2, '0')}:${new Date(msg.created_at).getMinutes().toString().padStart(2, '0')}
-        </span>
-        <span class="status-icon">${statusIcon}</span>
-      </div>
+    <div class="text" style="${msg.message === 'Pesan ini telah dihapus' ? 'font-style:italic;color:#aaa;' : ''} padding-bottom: 12px;">
+      ${contentHtml}
     </div>
-  `;
+
+    <div class="message-info" style="position: absolute; bottom: 4px; right: 8px; display:flex; align-items:center; gap:2px;">
+      <span class="timestamp" style="font-size:9px; opacity:0.5;">
+        ${formatTime(msg.created_at)}
+      </span>
+      ${statusIcon}
+    </div>
+  </div>
+`;
 
   // ===== Swipe to Reply =====
   let startX = 0;
@@ -389,9 +499,9 @@ function renderMessage(msg) {
         replyBox.style.borderLeft = "4px solid #0088cc";
         replyBox.innerHTML = `
           <div style="flex: 1; overflow: hidden;">
-            <div style="font-size: 11px; color: #0088cc; font-weight: bold;">Membalas ${currentUsername}</div>
+            <div style="font-size: 11px; color: #0088cc; font-weight: bold;">Membalas ${escapeHtml(currentUsername)}</div>
             <div style="font-size: 12px; color: #666; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
-              ${sticker ? "🖼 Stiker" : (msg.message || "")}
+              ${sticker ? "🖼 Stiker" : escapeHtml(msg.message || "")}
             </div>
           </div>
           <div onclick="window.cancelReply()" style="padding: 5px 10px; cursor: pointer; color: #ff4757; font-size: 24px; font-weight: bold;">
@@ -411,157 +521,325 @@ function renderMessage(msg) {
   messagesEl.appendChild(msgEl);
 }
 
+function updateMessageStatusUI(messageId, status) {
+  const msgEl = document.getElementById(`msg-${messageId}`);
+  if (!msgEl) return;
+
+  const infoEl = msgEl.querySelector('.message-info');
+  const timeEl = msgEl.querySelector('.timestamp');
+  if (!infoEl || !timeEl) return;
+
+  const oldStatus = infoEl.querySelector('.status-icon');
+  if (oldStatus) oldStatus.remove();
+
+  timeEl.insertAdjacentHTML('afterend', getStatusIcon(status));
+}
 // ===== Load Messages =====
 async function loadMessages() {
-  if (!messagesEl) return;
+  if (!messagesEl || !currentUser) return;
+
+  if (isFirstMessageLoad) {
+    showChatLoading();
+  }
+
+  const start = Date.now();
 
   const { data, error } = await supabase
     .from("messages")
     .select(`
       *,
       reply_to_msg:reply_to(id, username, message),
-      profiles:user_id(username, avatar_url, role)
+      profiles:profiles!messages_user_id_fkey(username, avatar_url, role)
     `)
     .eq("room_id", currentRoomId)
-    .order("created_at", { ascending: true }); // PESAN LAMA (ATAS) -> PESAN BARU (BAWAH)
+    .order("created_at", { ascending: true });
 
-  if (error) return console.error(error);
+  // Biar loading keliatan smooth, ga langsung blink
+  const elapsed = Date.now() - start;
+  const minDelay = 700;
+
+  if (isFirstMessageLoad && elapsed < minDelay) {
+    await new Promise(resolve => setTimeout(resolve, minDelay - elapsed));
+  }
+
+  if (error) {
+    console.error(error);
+
+    messagesEl.innerHTML = `
+      <div style="
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        justify-content:center;
+        gap:8px;
+        padding:40px 20px;
+        margin-top:20px;
+        color:#ff4d4f;
+        font-family:'Poppins', sans-serif;
+      ">
+        <div style="font-size:26px;">⚠️</div>
+        <div style="font-size:14px; font-weight:600;">Gagal memuat pesan</div>
+        <div style="font-size:12px; color:#999;">Coba lagi sebentar ya...</div>
+      </div>
+    `;
+    return;
+  }
 
   messagesEl.innerHTML = "";
-  if (data) {
-    data.forEach(msg => renderMessage(msg));
+  isFirstMessageLoad = false;
+
+  if (!data || data.length === 0) {
+    messagesEl.innerHTML = `
+      <div style="
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        justify-content:center;
+        gap:8px;
+        padding:40px 20px;
+        margin-top:20px;
+        color:#8696a0;
+        font-family:'Poppins', sans-serif;
+      ">
+        <div style="font-size:28px;">💬</div>
+        <div style="font-size:14px; font-weight:600;">Belum ada pesan</div>
+        <div style="font-size:12px;">Mulai percakapan dulu yuk</div>
+      </div>
+    `;
+    await markRoomAsRead();
+    return;
   }
-  
-  // Beri sedikit delay agar browser selesai merender sebelum scroll
+
+  data.forEach(msg => renderMessage(msg));
+
   setTimeout(scrollToBottom, 100);
 
-  // Tandai sebagai read
-  await supabase
+  await markRoomAsRead();
+}
+async function markRoomAsRead() {
+  if (!currentUser) return;
+
+  const { data: unread } = await supabase
     .from("messages")
-    .update({ status: 'read' })
+    .select("id")
     .eq("room_id", currentRoomId)
     .neq("user_id", currentUser.id)
-    .eq("status", "sent");
+    .in("status", ["sent", "delivered"]);
+
+  if (unread && unread.length > 0) {
+    const ids = unread.map(m => m.id);
+
+    await supabase
+      .from("messages")
+      .update({ status: 'read' })
+      .in("id", ids);
+  }
 }
 
 // ===== Send Message =====
 async function Message() {
   const text = inputEl?.value.trim();
-  if (!text) return;
+  if (!text || !currentUser) return;
 
   const replyTo = inputEl.dataset.replyTo || null;
-  // Buat ID sementara agar kita bisa menandai pesan ini nanti
-  const tempId = "temp-" + Date.now(); 
+  const tempId = "temp-" + Date.now();
+  const nowIso = new Date().toISOString();
 
-  // --- LANGKAH 1: TAMPILKAN LANGSUNG DI LAYAR (INSTAN) ---
   const optimisticMsg = {
-    id: tempId,
-    message: text,
-    user_id: currentUser.id,
-    username: myUsername,
-    avatar: sideAvatar?.src || "profile.png",
-    created_at: new Date().toISOString(),
-    room_id: currentRoomId,
-    status: 'sending' // Munculkan status sedang mengirim (opsional)
-  };
-  
+  id: tempId,
+  message: text,
+  user_id: currentUser.id,
+  username: myUsername,
+  avatar: sideAvatar?.src || "profile.png",
+  role: myRole || "user",
+  created_at: new Date().toISOString(),
+  room_id: currentRoomId,
+  status: 'sending'
+};
+
   renderMessage(optimisticMsg);
   scrollToBottom();
-  
-  // Reset input & suara detik itu juga
+
   inputEl.value = "";
   window.cancelReply();
   sendSound.play().catch(() => {});
 
   try {
-    // --- LANGKAH 2: KIRIM KE DATABASE DI BACKGROUND ---
-    const { error } = await supabase.from("messages").insert([{
-      message: text,
-      user_id: currentUser.id,
-      username: myUsername,
-      room_id: currentRoomId,
-      reply_to: replyTo,
-      status: 'sent'
-    }]);
+    const { data, error } = await supabase
+      .from("messages")
+      .insert([{
+        message: text,
+        user_id: currentUser.id,
+        username: myUsername,
+        room_id: currentRoomId,
+        reply_to: replyTo,
+        status: 'sent'
+      }])
+      .select()
+      .single();
 
     if (error) throw error;
 
-    // Jika berhasil, kita tidak perlu hapus tempId karena akan dihandle Realtime
+    // ✅ langsung ubah temp bubble jadi pesan asli
+    const tempEl = document.getElementById(`msg-${tempId}`);
+if (tempEl && data) {
+  tempEl.id = `msg-${data.id}`;
+  updateMessageStatusUI(data.id, 'sent');
+}
+
+setTimeout(() => loadChatHistory(), 150);
   } catch (err) {
     console.error("Gagal kirim:", err);
-    showToast("Gagal mengirim pesan", "error");
-    // Jika gagal total, hapus pesan bohongan tadi dari layar
+    showToast("Gagal mengirim pesan");
+
     const failEl = document.getElementById(`msg-${tempId}`);
-    if (failEl) failEl.remove();
+    if (failEl) {
+      const infoEl = failEl.querySelector('.message-info');
+      const timeEl = failEl.querySelector('.timestamp');
+
+      if (infoEl && timeEl) {
+        const oldStatus = infoEl.querySelector('.status-icon');
+        if (oldStatus) oldStatus.remove();
+
+        timeEl.insertAdjacentHTML(
+          'afterend',
+          `<span class="status-icon" style="font-size:10px; color:#ff4d4f; margin-left:4px;">failed</span>`
+        );
+      }
+    }
   }
 }
 
-// Pastikan ini terpasang agar tombolnya jalan
 if (Btn) Btn.onclick = Message;
 
-
-// ===== Realtime Messages =====
+if (inputEl) {
+  inputEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      Message();
+    }
+  });
+}
+// ===== Realtime Messages (NO REFRESH FIX) =====
 function initRealtimeMessages() {
-  // Pastikan kita tidak membuat banyak channel sekaligus
-  supabase.removeAllChannels();
+  if (!currentUser) return;
 
-  const channel = supabase.channel('messages-room')
-    .on('postgres_changes', { 
-      event: 'INSERT', 
-      schema: 'public', 
-      table: 'messages',
-      filter: `room_id=eq.${currentRoomId}` // Filter langsung di server agar lebih cepat
-    }, async (payload) => {
-      const newMsg = payload.new;
+  if (messageChannel) {
+    supabase.removeChannel(messageChannel);
+    messageChannel = null;
+  }
 
-      // 1. Jika pesan dari diri sendiri (untuk HP pengirim)
-      if (newMsg.user_id === currentUser.id) {
-        const tempEl = document.querySelector(`[id^="msg-temp-"]`);
-        if (tempEl) {
-          tempEl.id = `msg-${newMsg.id}`;
-          const icon = tempEl.querySelector('.status-icon');
-          if (icon) icon.innerHTML = getStatusIcon('sent');
+  messageChannel = supabase
+    .channel(`messages-${currentRoomId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: `room_id=eq.${currentRoomId}`
+      },
+      async (payload) => {
+        const newMsg = payload.new;
+
+        if (newMsg.room_id !== currentRoomId) return;
+
+        // ===== Pesan dari diri sendiri =====
+        if (newMsg.user_id === currentUser.id) {
+          const existingEl = document.getElementById(`msg-${newMsg.id}`);
+          if (existingEl) {
+            setTimeout(() => loadChatHistory(), 150);
+            return;
+          }
+
+          const tempEl = document.querySelector(`[id^="msg-temp-"]`);
+          if (tempEl) {
+            tempEl.id = `msg-${newMsg.id}`;
+            updateMessageStatusUI(newMsg.id, 'sent');
+          } else {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("username, avatar_url, role")
+              .eq("id", newMsg.user_id)
+              .single();
+
+            newMsg.profiles = profile || {
+              username: newMsg.username || "User",
+              avatar_url: newMsg.avatar || "profile.png",
+              role: newMsg.role || "user"
+            };
+
+            renderMessage(newMsg);
+            scrollToBottom();
+          }
+
+          setTimeout(() => loadChatHistory(), 150);
+          return;
         }
-        return;
-      }
 
-      // 2. Jika pesan dari orang lain (untuk HP penerima)
-      // Gunakan data payload langsung dulu agar pesan cepat muncul
-      const fallbackProfile = { 
-        username: newMsg.username || "User", 
-        avatar_url: "profile.png" 
-      };
+        // ===== Pesan dari orang lain =====
+        const { data: fullMsg } = await supabase
+          .from("messages")
+          .select(`
+            *,
+            reply_to_msg:reply_to(id, username, message),
+            profiles:profiles!messages_user_id_fkey(username, avatar_url, role)
+          `)
+          .eq("id", newMsg.id)
+          .single();
 
-      // Tampilkan pesan dulu (Tanpa Await) biar instan di HP penerima
-      newMsg.profiles = fallbackProfile;
-      renderMessage(newMsg);
-      scrollToBottom();
-      receiveSound.play().catch(() => {});
+        const incomingMsg = fullMsg || {
+          ...newMsg,
+          profiles: {
+            username: newMsg.username || "User",
+            avatar_url: newMsg.avatar || "profile.png",
+            role: newMsg.role || "user"
+          }
+        };
 
-      // Baru kemudian update profilnya jika berhasil diambil
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("username, avatar_url, role")
-        .eq("id", newMsg.user_id)
-        .single();
-      
-      if (profile) {
-        const msgEl = document.getElementById(`msg-${newMsg.id}`);
-        if (msgEl) {
-          msgEl.querySelector('.username').innerHTML = `${profile.username}${getBadge(profile.role)}`;
-          msgEl.querySelector('.avatar').src = profile.avatar_url || "profile.png";
+        renderMessage(incomingMsg);
+        scrollToBottom();
+        receiveSound.play().catch(() => {});
+
+        // Auto delivered/read
+        try {
+          await supabase
+            .from("messages")
+            .update({ status: document.hidden ? 'delivered' : 'read' })
+            .eq("id", newMsg.id)
+            .neq("user_id", currentUser.id);
+        } catch (e) {
+          console.warn("Gagal update status:", e);
         }
+
+        setTimeout(() => loadChatHistory(), 150);
+        updateHeaderStatus();
       }
-    })
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'messages',
+        filter: `room_id=eq.${currentRoomId}`
+      },
+      async (payload) => {
+        const updated = payload.new;
+        updateMessageStatusUI(updated.id, updated.status || 'sent');
+      }
+    )
     .subscribe((status) => {
-      console.log("Status Realtime:", status);
-      if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-        // Reconnect otomatis jika koneksi mati
-        setTimeout(initRealtimeMessages, 3000);
+      console.log("Realtime status:", status, "Room:", currentRoomId);
+
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        console.warn("Realtime putus, reconnecting...");
+        setTimeout(() => {
+          if (currentUser) initRealtimeMessages();
+        }, 1500);
       }
     });
 }
-
 // ===== Sidebar Toggle =====
 if (hamburger) {
   hamburger.addEventListener('click', () => {
@@ -574,20 +852,21 @@ if (hamburger) {
 }
 
 if (overlay) {
-  overlay.addEventListener('click', () => {
-    closeSidebar();
-  });
+  overlay.addEventListener('click', closeSidebar);
 }
 
 // ===== Profile Sidebar =====
 async function loadProfile() {
   const { data: profile } = await supabase
     .from("profiles")
-    .select("username, avatar_url, short_id")
+    .select("username, avatar_url, short_id, role")
     .eq("id", currentUser.id)
     .single();
 
   if (!profile) return;
+
+  myUsername = profile.username || myUsername;
+  myRole = profile.role || myRole;
 
   if (sideUsername) sideUsername.textContent = profile.username;
 
@@ -602,7 +881,6 @@ async function loadProfile() {
     sideAvatar.src = profile.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.username)}`;
   }
 }
-
 // ===== Render Global Chat Item =====
 function renderGlobalChatItem(container) {
   const globalBtn = document.createElement("div");
@@ -620,23 +898,25 @@ function renderGlobalChatItem(container) {
   `;
 
   globalBtn.onclick = async () => {
-    currentRoomId = 'room-1';
+  currentRoomId = 'room-1';
+  isFirstMessageLoad = true; // ✅ TAMBAH INI
 
-    const headerTitle = document.querySelector(".chat-header h3");
-    if (headerTitle) headerTitle.textContent = "HopeTalk Globe";
+  const headerTitle = document.querySelector(".chat-header h3");
+  if (headerTitle) headerTitle.textContent = "HopeTalk Globe";
 
-    await loadMessages();
-    await updateHeaderStatus();
-    closeSidebar();
-  };
+  initRealtimeMessages();
+  await loadMessages();
+  await updateHeaderStatus();
+  closeSidebar();
+};
 
   container.appendChild(globalBtn);
 }
 
-// ===== Load Chat History (ANTI DOUBLE FIX) =====
+// ===== Load Chat History =====
 async function loadChatHistory() {
   const list = document.getElementById("private-chat-list");
-  if (!list) return;
+  if (!list || !currentUser) return;
 
   list.innerHTML = "";
   renderGlobalChatItem(list);
@@ -678,9 +958,6 @@ async function loadChatHistory() {
     if (chat.message === "Pesan ini telah dihapus") lastMsg = "🚫 Pesan dihapus";
     lastMsg = lastMsg.length > 20 ? lastMsg.substring(0, 20) + "..." : lastMsg;
 
-    const jam = new Date(chat.created_at).getHours().toString().padStart(2, '0');
-    const menit = new Date(chat.created_at).getMinutes().toString().padStart(2, '0');
-
     const chatEl = document.createElement("div");
     chatEl.className = "sidebar-chat-item";
     chatEl.style.cssText = "display:flex; align-items:center; padding:12px; border-bottom:1px solid #f5f5f5; cursor:pointer;";
@@ -689,11 +966,11 @@ async function loadChatHistory() {
       <img src="${avatar}" style="width:45px; height:45px; border-radius:50%; margin-right:12px; object-fit:cover; border:1px solid #eee;">
       <div style="flex:1; overflow:hidden;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
-          <strong style="font-size:14px; color:#333;">${name}</strong>
-          <span style="font-size:10px; color:#bbb;">${jam}:${menit}</span>
+          <strong style="font-size:14px; color:#333;">${escapeHtml(name)}</strong>
+          <span style="font-size:10px; color:#bbb;">${formatTime(chat.created_at)}</span>
         </div>
         <div style="font-size:12px; color:#888; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-          ${lastMsg}
+          ${escapeHtml(lastMsg)}
         </div>
       </div>
     `;
@@ -710,7 +987,7 @@ if (btnSearchId) {
     const cleanId = (searchValue || "").replace('#', '');
 
     if (!cleanId) {
-      showToast("Masukkan ID (contoh: 0E870)", "info");
+      showToast("Masukkan ID (contoh: 0E870)");
       return;
     }
 
@@ -721,17 +998,17 @@ if (btnSearchId) {
       .single();
 
     if (error || !friend) {
-      showToast("ID tidak ditemukan!", "error");
+      showToast("ID tidak ditemukan!");
       return;
     }
 
     if (friend.id === currentUser.id) {
-      showToast("Ini ID kamu sendiri.", "info");
+      showToast("Ini ID kamu sendiri.");
       return;
     }
 
     await bukaChatPribadi(friend.id, friend.username, friend.short_id || '');
-    showToast(`Chat dengan ${friend.username} dibuka`, "success");
+    showToast(`Chat dengan ${friend.username} dibuka`);
   });
 }
 
@@ -739,18 +1016,18 @@ if (btnSearchId) {
 async function bukaChatPribadi(partnerId, partnerName, partnerShortId = '') {
   const ids = [currentUser.id, partnerId].sort();
   currentRoomId = `pv_${ids[0]}_${ids[1]}`;
+  isFirstMessageLoad = true; // ✅ TAMBAH INI
+
+  initRealtimeMessages();
 
   const headerTitle = document.querySelector(".chat-header h3");
   if (headerTitle) {
-    headerTitle.innerHTML = `${partnerName} <span style="font-size:10px; opacity:0.5;">#${partnerShortId}</span>`;
+    headerTitle.innerHTML = `${escapeHtml(partnerName)} <span style="font-size:10px; opacity:0.5;">#${escapeHtml(partnerShortId)}</span>`;
   }
 
   await updateHeaderStatus();
 
-  if (messagesEl) {
-    messagesEl.innerHTML = "<p style='text-align:center; color:#ccc; margin-top:20px;'>Memuat pesan...</p>";
-  }
-
+  
   await loadMessages();
   closeSidebar();
   scrollToBottom();
@@ -762,42 +1039,38 @@ async function bukaChatPribadi(partnerId, partnerName, partnerShortId = '') {
 // ===== Header Status =====
 async function updateHeaderStatus() {
   const headerStatusEl = document.getElementById("status-header");
-  if (!headerStatusEl) return;
+  if (!headerStatusEl || !currentUser) return;
 
   // Global chat
   if (currentRoomId === 'room-1') {
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
 
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("online_users")
       .select("username")
       .gt("last_seen", fiveMinutesAgo)
       .neq("user_id", currentUser.id)
       .limit(1);
 
-    if (!error) {
-      const { count } = await supabase
-        .from("online_users")
-        .select("user_id", { count: 'exact', head: true })
-        .gt("last_seen", fiveMinutesAgo);
+    const { count } = await supabase
+      .from("online_users")
+      .select("user_id", { count: 'exact', head: true })
+      .gt("last_seen", fiveMinutesAgo);
 
-      const totalOnline = count || 0;
+    const totalOnline = count || 0;
 
-      if (totalOnline <= 1 && (!data || data.length === 0)) {
-        headerStatusEl.innerHTML = `<span style="opacity:0.8;">Hanya kamu yang online</span>`;
-      } else if (totalOnline === 2 && data && data.length > 0) {
-        headerStatusEl.innerHTML = `<span class="online-dot" style="background:#2ecc71; width:7px; height:7px; display:inline-block; border-radius:50%; margin-right:4px;"></span> ${data[0].username} sedang online`;
-      } else {
-        headerStatusEl.innerHTML = `<span class="online-dot" style="background:#fff; width:7px; height:7px; display:inline-block; border-radius:50%; margin-right:4px;"></span> ${totalOnline} users online`;
-      }
+    if (totalOnline <= 1 && (!data || data.length === 0)) {
+      headerStatusEl.innerHTML = `<span style="opacity:0.8;">Hanya kamu yang online</span>`;
+    } else if (totalOnline === 2 && data && data.length > 0) {
+      headerStatusEl.innerHTML = `<span class="online-dot" style="background:#2ecc71; width:7px; height:7px; display:inline-block; border-radius:50%; margin-right:4px;"></span> ${escapeHtml(data[0].username)} sedang online`;
+    } else {
+      headerStatusEl.innerHTML = `<span class="online-dot" style="background:#fff; width:7px; height:7px; display:inline-block; border-radius:50%; margin-right:4px;"></span> ${totalOnline} users online`;
     }
     return;
   }
 
   // Private chat
-  const participants = currentRoomId.replace("pv_", "").split("_");
-  const partnerId = participants.find(id => id !== currentUser.id);
-
+  const partnerId = getPartnerIdFromRoom(currentRoomId);
   if (!partnerId) return;
 
   const { data: partnerStatus } = await supabase
@@ -817,9 +1090,7 @@ async function updateHeaderStatus() {
   if (isOnline) {
     headerStatusEl.innerHTML = `<span class="online-dot" style="background:#2ecc71; width:8px; height:8px; display:inline-block; border-radius:50%; margin-right:4px;"></span> Sedang online`;
   } else {
-    const jam = lastSeenDate.getHours().toString().padStart(2, '0');
-    const menit = lastSeenDate.getMinutes().toString().padStart(2, '0');
-    headerStatusEl.innerHTML = `<span style="opacity:0.8;">Terakhir terlihat ${jam}:${menit}</span>`;
+    headerStatusEl.innerHTML = `<span style="opacity:0.8;">Terakhir terlihat ${formatTime(partnerStatus.last_seen)}</span>`;
   }
 }
 
@@ -855,6 +1126,8 @@ async function fetchStickers(query = "") {
 }
 
 async function sendSticker(url) {
+  const tempId = "temp-" + Date.now();
+
   try {
     const { data: profile } = await supabase
       .from("profiles")
@@ -862,23 +1135,68 @@ async function sendSticker(url) {
       .eq("id", currentUser.id)
       .single();
 
-    const { error } = await supabase.from("messages").insert([{
+    renderMessage({
+      id: tempId,
       message: "",
       user_id: currentUser.id,
       username: profile?.username || "User",
       avatar: profile?.avatar_url || "profile.png",
       role: profile?.role || "user",
       sticker_url: url,
+      created_at: new Date().toISOString(),
       room_id: currentRoomId,
-      status: 'sent'
-    }]);
+      status: "sending"
+    });
+
+    scrollToBottom();
+    sendSound.play().catch(() => {});
+
+    const { data, error } = await supabase
+      .from("messages")
+      .insert([{
+        message: "",
+        user_id: currentUser.id,
+        username: profile?.username || "User",
+        avatar: profile?.avatar_url || "profile.png",
+        role: profile?.role || "user",
+        sticker_url: url,
+        room_id: currentRoomId,
+        status: "sent"
+      }])
+      .select()
+      .single();
 
     if (error) throw error;
 
+    const tempEl = document.getElementById(`msg-${tempId}`);
+    if (tempEl && data) {
+      tempEl.id = `msg-${data.id}`;
+      updateMessageStatusUI(data.id, "sent");
+    }
+
     if (stickerMenu) stickerMenu.style.display = "none";
+
+    setTimeout(() => loadChatHistory(), 150);
+
   } catch (err) {
     console.error("Gagal kirim stiker:", err.message);
-    showToast("Gagal kirim stiker", "error");
+    showToast("Gagal kirim stiker");
+
+    const failEl = document.getElementById(`msg-${tempId}`);
+    if (failEl) {
+      const infoEl = failEl.querySelector(".message-info");
+      const timeEl = failEl.querySelector(".timestamp");
+
+      if (infoEl && timeEl) {
+        const oldStatus = infoEl.querySelector(".status-icon");
+        if (oldStatus) oldStatus.remove();
+
+        timeEl.insertAdjacentHTML(
+          "afterend",
+          `<span class="status-icon" style="font-size:10px; color:#ff4d4f; margin-left:4px;">failed</span>`
+        );
+      }
+    }
   }
 }
 
@@ -887,13 +1205,14 @@ if (searchBtn) {
 }
 
 if (searchInput) {
-  searchInput.onkeypress = (e) => {
+  searchInput.onkeydown = (e) => {
     if (e.key === "Enter") fetchStickers(searchInput.value);
   };
 }
 
-if (document.getElementById("sticker-btn")) {
-  document.getElementById("sticker-btn").onclick = () => {
+const stickerBtn = document.getElementById("sticker-btn");
+if (stickerBtn) {
+  stickerBtn.onclick = () => {
     if (!stickerMenu) return;
     stickerMenu.style.display =
       (stickerMenu.style.display === "none" || stickerMenu.style.display === "")
@@ -901,7 +1220,6 @@ if (document.getElementById("sticker-btn")) {
         : "none";
   };
 }
-
 // ===== Delete Menu =====
 function showDeleteMenu(id) {
   selectedMessageId = id;
@@ -965,12 +1283,12 @@ if (saveBtnElement) {
 
       if (error) throw error;
 
-      showToast("Biodata berhasil disimpan!", "success");
+      showToast("Biodata berhasil disimpan!");
       window.closeBioModal();
 
     } catch (err) {
       console.error(err);
-      showToast("Gagal simpan biodata", "error");
+      showToast("Gagal simpan biodata");
     } finally {
       saveBtnElement.innerText = "Simpan & Cari";
       saveBtnElement.disabled = false;
@@ -1017,7 +1335,7 @@ if (btnCariDoiActual) {
       .maybeSingle();
 
     if (!myProfile?.gender) {
-      showToast("Setel GENDER kamu dulu di Edit Biodata!", "error");
+      showToast("Setel GENDER kamu dulu di Edit Biodata!");
       window.openEditProfile();
       return;
     }
@@ -1045,7 +1363,7 @@ if (btnCariDoiActual) {
       loadingOverlay.remove();
 
       if (!users || users.length === 0) {
-        showToast(`Waduh, belum ada ${lawanJenis} yang tersedia.`, "info");
+        showToast(`Waduh, belum ada ${lawanJenis} yang tersedia.`);
         return;
       }
 
@@ -1057,6 +1375,12 @@ if (btnCariDoiActual) {
   };
 }
 
+// ===== Auto read when app visible =====
+document.addEventListener("visibilitychange", async () => {
+  if (!document.hidden) {
+    await markRoomAsRead();
+  }
+});
 
 // ===== Init =====
 async function init() {
@@ -1070,11 +1394,12 @@ async function init() {
     await initPresence();
 
     await loadChatHistory();
+
+    initRealtimeMessages(); // WAJIB sebelum loadMessages juga boleh
     await loadMessages();
     await updateHeaderStatus();
 
     fetchStickers();
-    initRealtimeMessages();
     scrollToBottom();
 
     setInterval(setUserOnline, 30000);
@@ -1083,7 +1408,7 @@ async function init() {
 
   } catch (err) {
     console.error("Gagal inisialisasi:", err);
-    showToast("Gagal memuat chat", "error");
+    showToast("Gagal memuat chat");
   }
 }
 
