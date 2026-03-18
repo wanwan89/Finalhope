@@ -468,36 +468,6 @@ html, body {
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
-/* --- Toasts & Indicators --- */
-#toast-container {
-  position: fixed;
-  top: 14px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 99999;
-  width: calc(100% - 24px);
-  max-width: 420px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  pointer-events: none;
-}
-
-.toast-card {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: #ffffff;
-  color: #1f2937;
-  border-radius: 20px;
-  padding: 12px 14px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
-  opacity: 0;
-  transform: translateY(-20px) scale(0.96);
-  transition: all 0.28s ease;
-  pointer-events: auto;
-  min-height: 64px;
-}
 
 .online-dot {
   height: 8px;
@@ -843,3 +813,4 @@ html, body {
     transform: translateY(0);
   }
 }
+ 

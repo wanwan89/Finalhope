@@ -1,485 +1,384 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Login</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <title>Login | HopeHype</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<link rel="stylesheet" href="toast.css">
+<script src="toast.js"></script>
 
-<style>
-* {
-  box-sizing: border-box;
-}
 
-body{
-  margin:0;
-  min-height:100vh;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  background-image: url('back.png');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  padding: 16px;
-}
 
-/* ===== FORM PUTIH CLEAN ===== */
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-  width: 100%;
-  max-width: 290px;
-  background: #ffffff;
-  padding: 18px 14px;
-  border-radius: 18px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
-}
-
-/* ===== JUDUL ===== */
-.form::before {
-  content: "Welcome Back";
-  display: block;
-  text-align: center;
-  font-size: 18px;
-  font-weight: 700;
-  color: #111827;
-  margin-bottom: 2px;
-}
-
-.form::after {
-  content: "Login untuk melanjutkan";
-  display: block;
-  text-align: center;
-  font-size: 11px;
-  color: #6b7280;
-  margin-bottom: 6px;
-}
-
-/* ===== LABEL ===== */
-.flex-column > label {
-  color: #111827;
-  font-size: 12px;
-  font-weight: 600;
-  margin-bottom: 2px;
-  display: block;
-}
-
-/* ===== INPUT ===== */
-.inputForm {
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  height: 42px;
-  display: flex;
-  align-items: center;
-  padding: 0 10px;
-  background: #ffffff;
-  transition: 0.2s ease;
-}
-
-.inputForm svg {
-  fill: #6b7280;
-  flex-shrink: 0;
-  width: 16px;
-  height: 16px;
-}
-
-.input {
-  margin-left: 8px;
-  border: none;
-  width: 100%;
-  height: 100%;
-  background: transparent;
-  color: #111827;
-  font-size: 13px;
-}
-
-.input::placeholder {
-  color: #9ca3af;
-  font-family: inherit;
-  font-size: 12px;
-}
-
-.input:focus {
-  outline: none;
-}
-
-.inputForm:focus-within {
-  border-color: #111827;
-  box-shadow: 0 0 0 2px rgba(17, 24, 39, 0.08);
-}
-
-/* ===== REMEMBER / FORGOT ===== */
-.flex-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-top: 2px;
-  flex-wrap: wrap;
-}
-
-.flex-row > div {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.flex-row > div > label {
-  font-size: 11px;
-  color: #374151;
-  font-weight: 400;
-}
-
-#rememberMe {
-  accent-color: #111827;
-  width: 14px;
-  height: 14px;
-}
-
-.span {
-  font-size: 11px;
-  color: #111827;
-  font-weight: 600;
-  cursor: pointer;
-  transition: 0.2s ease;
-}
-
-.span:hover {
-  opacity: 0.75;
-  text-decoration: underline;
-}
-
-/* ===== BUTTON LOGIN ===== */
-.button-submit {
-  margin: 8px 0 4px 0;
-  background: #111827;
-  border: none;
-  color: white;
-  font-size: 13px;
-  font-weight: 700;
-  border-radius: 12px;
-  height: 42px;
-  width: 100%;
-  cursor: pointer;
-  transition: 0.2s ease;
-}
-
-.button-submit:hover {
-  background: #000000;
-}
-
-.button-submit:active {
-  transform: scale(0.98);
-}
-
-/* ===== TEXT ===== */
-.p {
-  text-align: center;
-  color: #4b5563;
-  font-size: 11px;
-  margin: 2px 0;
-  line-height: 1.4;
-}
-
-.line {
-  position: relative;
-  margin: 8px 0 2px;
-  color: #6b7280;
-}
-
-.line::before,
-.line::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  width: 28%;
-  height: 1px;
-  background: #e5e7eb;
-}
-
-.line::before { left: 0; }
-.line::after { right: 0; }
-
-/* ===== GOOGLE BUTTON ===== */
-.btn {
-  margin-top: 4px;
-  width: 100%;
-  height: 42px;
-  border-radius: 12px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-weight: 600;
-  font-size: 13px;
-  gap: 8px;
-  border: 1px solid #e5e7eb;
-  background: #ffffff;
-  color: #111827;
-  cursor: pointer;
-  transition: 0.2s ease;
-}
-
-.btn:hover {
-  background: #f9fafb;
-  border-color: #d1d5db;
-}
-
-.btn svg {
-  flex-shrink: 0;
-  width: 16px;
-  height: 16px;
-}
-
-.toast-container {
-  position: fixed;
-  top: 14px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 99999;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  pointer-events: none;
-}
-
-.toast-card {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: #ffffff;
-  color: #1f2937;
-  border-radius: 20px;
-  padding: 12px 14px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
-  pointer-events: auto;
-  min-height: 64px;
-
-  opacity: 0;
-  transform: translateY(-20px) scale(0.96);
-  transition: opacity 0.28s ease, transform 0.28s ease;
-}
-</style>
-</head>
-
-<body>
-   
-<form class="form" id="loginForm">
-
-<div class="flex-column">
-<label>Username</label>
-</div>
-<div class="inputForm">
-<svg xmlns="http://www.w3.org/2000/svg" width="20" viewBox="0 0 24 24" height="20">
-<path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v3h20v-3c0-3.3-6.7-5-10-5z"/>
-</svg>
-<input id="username" placeholder="Enter your Username" class="input" type="text">
-</div>
-
-<div class="flex-column">
-<label>Email</label>
-</div>
-<div class="inputForm">
-<svg xmlns="http://www.w3.org/2000/svg" width="20" viewBox="0 0 32 32" height="20"><g data-name="Layer 3" id="Layer_3"><path d="m30.853 13.87a15 15 0 0 0 -29.729 4.082 15.1 15.1 0 0 0 12.876 12.918 15.6 15.6 0 0 0 2.016.13 14.85 14.85 0 0 0 7.715-2.145 1 1 0 1 0 -1.031-1.711 13.007 13.007 0 1 1 5.458-6.529 2.149 2.149 0 0 1 -4.158-.759v-10.856a1 1 0 0 0 -2 0v1.726a8 8 0 1 0 .2 10.325 4.135 4.135 0 0 0 7.83.274 15.2 15.2 0 0 0 .823-7.455zm-14.853 8.13a6 6 0 1 1 6-6 6.006 6.006 0 0 1 -6 6z"></path></g></svg>
-<input id="email" placeholder="Enter your Email" class="input" type="email">
-</div>
-
-<div class="flex-column">
-<label>Password</label>
-</div>
-<div class="inputForm">
-<svg xmlns="http://www.w3.org/2000/svg" width="20" viewBox="-64 0 512 512" height="20"><path d="m336 512h-288c-26.453125 0-48-21.523438-48-48v-224c0-26.476562 21.546875-48 48-48h288c26.453125 0 48 21.523438 48 48v224c0 26.476562-21.546875 48-48 48zm-288-288c-8.8125 0-16 7.167969-16 16v224c0 8.832031 7.1875 16 16 16h288c8.8125 0 16-7.167969 16-16v-224c0-8.832031-7.1875-16-16-16zm0 0"></path><path d="m304 224c-8.832031 0-16-7.167969-16-16v-80c0-52.929688-43.070312-96-96-96s-96 43.070312-96 96v80c0 8.832031-7.167969 16-16 16s-16-7.167969-16-16v-80c0-70.59375 57.40625-128 128-128s128 57.40625 128 128v80c0 8.832031-7.167969 16-16 16zm0 0"></path></svg>        
-<input id="password" placeholder="Enter your Password" class="input" type="password">
-</div>
-    
-<div class="flex-row">
-  <div>
-    <input type="checkbox" id="rememberMe">
-    <label for="rememberMe">Remember me</label>
-  </div>
-  <span class="span" id="forgotBtn">Forgot password?</span>
-</div>
-
-<button type="submit" class="button-submit">Sign In</button>
-
-<p class="p">Don't have an account? <span class="span" id="signupBtn">Sign Up</span></p>
-<p class="p line">Or With</p>
-
-<div class="flex-row">
-  <button type="button" class="btn google" id="googleBtn">
-    <svg xml:space="preserve" style="enable-background:new 0 0 512 512;" viewBox="0 0 512 512" y="0px" x="0px" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg" id="Layer_1" width="20" version="1.1">
-      <path d="M113.47,309.408L95.648,375.94l-65.139,1.378C11.042,341.211,0,299.9,0,256
-      c0-42.451,10.324-82.483,28.624-117.732h0.014l57.992,10.632l25.404,57.644c-5.317,15.501-8.215,32.141-8.215,49.456
-      C103.821,274.792,107.225,292.797,113.47,309.408z" style="fill:#FBBB00;"></path>
-      <path d="M507.527,208.176C510.467,223.662,512,239.655,512,256c0,18.328-1.927,36.206-5.598,53.451
-      c-12.462,58.683-45.025,109.925-90.134,146.187l-0.014-0.014l-73.044-3.727l-10.338-64.535
-      c29.932-17.554,53.324-45.025,65.646-77.911h-136.89V208.176h138.887L507.527,208.176L507.527,208.176z" style="fill:#518EF8;"></path>
-      <path d="M416.253,455.624l0.014,0.014C372.396,490.901,316.666,512,256,512
-      c-97.491,0-182.252-54.491-225.491-134.681l82.961-67.91c21.619,57.698,77.278,98.771,142.53,98.771
-      c28.047,0,54.323-7.582,76.87-20.818L416.253,455.624z" style="fill:#28B446;"></path>
-      <path d="M419.404,58.936l-82.933,67.896c-23.335-14.586-50.919-23.012-80.471-23.012
-      c-66.729,0-123.429,42.957-143.965,102.724l-83.397-68.276h-0.014C71.23,56.123,157.06,0,256,0
-      C318.115,0,375.068,22.126,419.404,58.936z" style="fill:#F14336;"></path>
-    </svg>
-    Google
-  </button>
-</div>
-</form>
-
-<div class="toast-container" id="toastContainer"></div>
-
-<script>
-// =======================
-// SUPABASE INIT
-// =======================
-const SUPABASE_URL = "https://hqetnqnvmdxdgfnnluew.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxZXRucW52bWR4ZGdmbm5sdWV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3MzUyODIsImV4cCI6MjA4NzMxMTI4Mn0.Cr9lDBZMqfeONi1dfyFzHpBtawBzZTQLBEWKmPJVAOA";
-
-const { createClient } = supabase;
-const client = createClient(SUPABASE_URL, SUPABASE_KEY);
-
-// =======================
-// TOAST FUNCTION
-// =======================
-function showToast(message) {
-  const container = document.getElementById("toastContainer");
-  if (!container) return;
-
-  const toast = document.createElement("div");
-  toast.className = "toast-card";
-  toast.textContent = message;
-
-  // tambahkan ke container
-  container.appendChild(toast);
-
-  // paksa browser menghitung style awal
-  toast.getBoundingClientRect();
-
-  // trigger animasi masuk
-  toast.style.opacity = "1";
-  toast.style.transform = "translateY(0) scale(1)";
-
-  // hilang otomatis
-  setTimeout(() => {
-    toast.style.opacity = "0";
-    toast.style.transform = "translateY(-20px) scale(0.96)";
-    setTimeout(() => toast.remove(), 280); // delay sama dengan transition
-  }, 3000);
-}
-// =======================
-// LOGIN
-// =======================
-document.getElementById("loginForm").addEventListener("submit", async function(e){
-  e.preventDefault();
-
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value.trim();
-
-  if(!email || !password){
-    showToast("Email dan password harus diisi", "error");
-    return;
-  }
-
-  try {
-    const { data, error } = await client.auth.signInWithPassword({
-      email,
-      password
-    });
-
-    if(error) throw error;
-
-    if(data.session){
-      showToast("Login berhasil!", "success");
-      setTimeout(() => { window.location.href = "home.html"; }, 1000);
-    } else {
-      showToast("Login gagal, coba lagi", "error");
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
     }
 
-  } catch(err){
-    showToast(err.message || "Terjadi kesalahan", "error");
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #ffffff; /* Background Putih Polos */
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      padding: 20px;
+    }
+
+    /* ===== FORM CONTAINER ===== */
+    .form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      max-width: 320px;
+      background: #ffffff;
+      padding: 30px 20px;
+      border-radius: 28px;
+      /* Shadow super halus agar menyatu dengan BG putih */
+      box-shadow: 0 10px 40px rgba(0,0,0,0.04), 0 2px 10px rgba(0,0,0,0.02);
+      border: 1px solid #f0f0f0;
+      transition: transform 0.3s ease;
+    }
+
+    /* ===== JUDUL & SUBTITLE ===== */
+    .form-header {
+      text-align: center;
+      margin-bottom: 15px;
+    }
+
+    .form-header h1 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 800;
+      color: #111827;
+      letter-spacing: -0.5px;
+    }
+
+    .form-header p {
+      margin: 5px 0 0;
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    /* ===== INPUT GROUP ===== */
+    .flex-column {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .flex-column label {
+      color: #374151;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: 4px;
+    }
+
+    .inputForm {
+      border: 1px solid #f3f4f6;
+      border-radius: 16px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      background: #f9fafb; /* Sedikit kontras dari putih body */
+      transition: all 0.2s ease;
+    }
+
+    .inputForm svg {
+      fill: #9ca3af;
+      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
+    }
+
+    .input {
+      margin-left: 10px;
+      border: none;
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      color: #111827;
+      font-size: 14px;
+    }
+
+    .input::placeholder {
+      color: #d1d5db;
+    }
+
+    .input:focus {
+      outline: none;
+    }
+
+    .inputForm:focus-within {
+      border-color: #111827;
+      background: #ffffff;
+      box-shadow: 0 0 0 4px rgba(17, 24, 39, 0.05);
+    }
+
+    /* ===== ACTIONS ROW ===== */
+    .flex-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 4px 0;
+    }
+
+    .flex-row div {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .flex-row label {
+      font-size: 12px;
+      color: #6b7280;
+      cursor: pointer;
+    }
+
+    #rememberMe {
+      accent-color: #111827;
+      width: 15px;
+      height: 15px;
+      cursor: pointer;
+    }
+
+    .span {
+      font-size: 12px;
+      color: #111827;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .span:hover {
+      text-decoration: underline;
+    }
+
+    /* ===== BUTTONS ===== */
+    .button-submit {
+      margin-top: 10px;
+      background: #111827;
+      border: none;
+      color: white;
+      font-size: 14px;
+      font-weight: 700;
+      border-radius: 16px;
+      height: 48px;
+      width: 100%;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .button-submit:hover {
+      background: #000000;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .button-submit:active {
+      transform: translateY(0);
+    }
+
+    .btn-google {
+      margin-top: 10px;
+      width: 100%;
+      height: 48px;
+      border-radius: 16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: 600;
+      font-size: 14px;
+      gap: 10px;
+      border: 1px solid #e5e7eb;
+      background: #ffffff;
+      color: #374151;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-google:hover {
+      background: #f9fafb;
+      border-color: #d1d5db;
+    }
+
+    /* ===== DIVIDER ===== */
+    .divider {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      margin: 15px 0;
+      color: #d1d5db;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .divider:not(:empty)::before { margin-right: 10px; }
+    .divider:not(:empty)::after { margin-left: 10px; }
+
+    .p-footer {
+      text-align: center;
+      color: #9ca3af;
+      font-size: 12px;
+      margin-top: 15px;
+    }
+
+
+  </style>
+</head>
+<body>
+
+
+
+  <form class="form" id="loginForm">
+    <div class="form-header">
+      <h1>HopeHype</h1>
+      <p>Login to your account</p>
+    </div>
+
+    <div class="flex-column">
+      <label>Username</label>
+      <div class="inputForm">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v3h20v-3c0-3.3-6.7-5-10-5z"/></svg>
+        <input id="username" placeholder="Required for Sign Up" class="input" type="text">
+      </div>
+    </div>
+
+    <div class="flex-column">
+      <label>Email</label>
+      <div class="inputForm">
+        <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="m30.853 13.87a15 15 0 0 0 -29.729 4.082 15.1 15.1 0 0 0 12.876 12.918 15.6 15.6 0 0 0 2.016.13 14.85 14.85 0 0 0 7.715-2.145 1 1 0 1 0 -1.031-1.711 13.007 13.007 0 1 1 5.458-6.529 2.149 2.149 0 0 1 -4.158-.759v-10.856a1 1 0 0 0 -2 0v1.726a8 8 0 1 0 .2 10.325 4.135 4.135 0 0 0 7.83.274 15.2 15.2 0 0 0 .823-7.455zm-14.853 8.13a6 6 0 1 1 6-6 6.006 6.006 0 0 1 -6 6z"></path></svg>
+        <input id="email" placeholder="Enter your email" class="input" type="email" required>
+      </div>
+    </div>
+
+    <div class="flex-column">
+      <label>Password</label>
+      <div class="inputForm">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm9 14H6V10h12v10zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/></svg>
+        <input id="password" placeholder="Enter your password" class="input" type="password" required>
+      </div>
+    </div>
+    
+    <div class="flex-row">
+      <div>
+        <input type="checkbox" id="rememberMe">
+        <label for="rememberMe">Remember me</label>
+      </div>
+      <span class="span" id="forgotBtn">Forgot password?</span>
+    </div>
+
+    <button type="submit" class="button-submit">Sign In</button>
+
+    <p class="p-footer">Don't have an account? <span class="span" id="signupBtn">Sign Up</span></p>
+    
+    <div class="divider">Or With</div>
+
+    <button type="button" class="btn-google" id="googleBtn">
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path></svg>
+      Google
+    </button>
+  </form>
+
+  <script>
+    // =======================
+    // SUPABASE CONFIG
+    // =======================
+    const SUPABASE_URL = "https://hqetnqnvmdxdgfnnluew.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxZXRucW52bWR4ZGdmbm5sdWV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3MzUyODIsImV4cCI6MjA4NzMxMTI4Mn0.Cr9lDBZMqfeONi1dfyFzHpBtawBzZTQLBEWKmPJVAOA";
+    
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // =======================
+    // TOAST SYSTEM
+    // =======================
+    function showToast(msg) {
+      const container = document.getElementById("toastContainer");
+      const toast = document.createElement("div");
+      toast.className = "toast-card";
+      toast.innerHTML = `<span>✨</span> ${msg}`;
+      container.appendChild(toast);
+
+      setTimeout(() => toast.classList.add("show"), 10);
+      setTimeout(() => {
+        toast.classList.remove("show");
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // =======================
+    // LOGIN LOGIC
+    // =======================
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  const { data, error } = await client.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    toast("Login Gagal", error.message); // Memanggil fungsi global
+  } else {
+    toast("Berhasil", "Welcome back to HopeHype!");
+    setTimeout(() => window.location.href = "home.html", 1000);
   }
 });
 
-// =======================
-// SIGNUP
-// =======================
-document.getElementById("signupBtn").addEventListener("click", async function(){
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value.trim();
-  const username = document.getElementById("username")?.value.trim() || "user";
+// SIGN UP LOGIC
+document.getElementById("signupBtn").onclick = async () => {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+  const username = document.getElementById("username").value || "NewUser";
 
-  if(!email || !password){
-    showToast("Email dan password harus diisi", "error");
-    return;
-  }
+  if(!email || !password) return toast("Peringatan", "Email & Password required");
 
   const avatar = `https://api.dicebear.com/7.x/initials/svg?seed=${username}`;
 
-  try {
-    const { data, error } = await client.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { username, avatar_url: avatar }
-      }
-    });
+  const { data, error } = await client.auth.signUp({
+    email, password,
+    options: { data: { username, avatar_url: avatar } }
+  });
 
-    if(error) throw error;
+  if (error) toast("Error", error.message);
+  else toast("Sukses", "Account created! You can now log in.");
+};
+    // =======================
+    // GOOGLE AUTH
+    // =======================
+    document.getElementById("googleBtn").onclick = async () => {
+      const { error } = await client.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.origin + "/home.html" }
+      });
+      if (error) showToast(error.message);
+    };
 
-    showToast("Akun berhasil dibuat! Silakan login.", "success");
+    // =======================
+    // RESET PASSWORD
+    // =======================
+    document.getElementById("forgotBtn").onclick = async () => {
+      const email = document.getElementById("email").value;
+      if(!email) return showToast("Enter your email first");
 
-  } catch(err){
-    showToast(err.message || "Terjadi kesalahan", "error");
-  }
-});
+      const { error } = await client.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + "/reset.html"
+      });
 
-// =======================
-// FORGOT PASSWORD
-// =======================
-document.getElementById("forgotBtn").addEventListener("click", async function(){
-  const email = document.getElementById("email").value.trim();
-  if(!email){
-    showToast("Masukkan email dulu", "error");
-    return;
-  }
-
-  try {
-    const { data, error } = await client.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + "/reset.html"
-    });
-
-    if(error) throw error;
-
-    showToast("Link reset password sudah dikirim ke email kamu", "success");
-
-  } catch(err){
-    showToast(err.message || "Terjadi kesalahan", "error");
-  }
-});
-
-// =======================
-// LOGIN VIA GOOGLE
-// =======================
-document.getElementById("googleBtn").addEventListener("click", async function() {
-  try {
-    const { data, error } = await client.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: window.location.origin + "/home.html"
-      }
-    });
-
-    if(error) throw error;
-
-    showToast("Mengarahkan ke Google login...", "success");
-
-  } catch(err){
-    showToast(err.message || "Terjadi kesalahan", "error");
-  }
-});
-</script>
+      if (error) showToast(error.message);
+      else showToast("Reset link sent to your email!");
+    };
+  </script>
 </body>
 </html>

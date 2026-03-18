@@ -81,29 +81,43 @@ function formatTime(dateString) {
 }
 
 function showToast(message) {
-  let container = document.getElementById("toast-container");
+  // Gunakan ID 'toast' agar nyambung dengan CSS kita
+  let container = document.getElementById("toast");
   if (!container) {
     container = document.createElement("div");
-    container.id = "toast-container";
+    container.id = "toast";
     document.body.appendChild(container);
   }
 
+  // Buat kartu toast dengan struktur lengkap (Icon + Text)
   const toast = document.createElement("div");
   toast.className = "toast-card";
-  toast.innerText = message;
+  
+  toast.innerHTML = `
+    <div class="toast-icon-wrap warning">
+      <span class="toast-icon">!</span>
+    </div>
+    <div class="toast-content">
+      <span class="toast-title">Pemberitahuan</span>
+      <span class="toast-subtitle">${message}</span>
+    </div>
+    <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
+  `;
+
   container.appendChild(toast);
 
+  // Animasi muncul
   requestAnimationFrame(() => {
-    toast.style.opacity = "1";
-    toast.style.transform = "translateY(0) scale(1)";
+    toast.classList.add("show");
   });
 
+  // Otomatis hilang dalam 3 detik
   setTimeout(() => {
-    toast.style.opacity = "0";
-    toast.style.transform = "translateY(-20px) scale(0.96)";
-    setTimeout(() => toast.remove(), 280);
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 300);
   }, 3000);
 }
+
 
 // 👇 TARUH DI SINI PERSIS
 function showChatLoading() {

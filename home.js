@@ -63,6 +63,7 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+ 
 // =======================
 // AUDIO PLAYER
 // =======================
@@ -692,7 +693,7 @@ const initApp = async () => {
     await updateAuthMenu();
     await loadUser();
     await loadUnreadNotifications();
-    await subscribeNotifications();
+    await subscribeNotifications(); // ✅ pastikan ini namanya benar
     await checkPopup();
   } catch (err) {
     console.error("initApp error:", err);
@@ -793,59 +794,41 @@ document.querySelectorAll(".buy-now-btn").forEach((button) => {
   };
 });
 // =======================
-// NOTIFICATION SYSTEM
+// NOTIFICATION SYSTEM (FIXED STRUCTURE)
 // =======================
 const notifBell = document.getElementById("notifBell");
 const notifCountEl = document.getElementById("notifCount");
-// Gunakan let, jangan const, biar bisa di-assign ulang kalau null
-let notifList = document.getElementById("notificationList"); 
-
+let notifList = document.getElementById("notificationList");
 let notifChannel = null;
 let currentUserId = null;
+let notificationsPaused = false;
 
-
-// ==========================================
-// UPDATE BADGE DENGAN ANIMASI (GANTI DI SINI)
-// ==========================================
+// ===== UPDATE BADGE =====
 function updateNotifBadge(count) {
   if (!notifCountEl) return;
-
   if (!count || count <= 0) {
     notifCountEl.style.display = "none";
     notifCountEl.textContent = "0";
     return;
   }
-
-  // Update angka
   notifCountEl.style.display = "flex";
   notifCountEl.textContent = count > 99 ? "99+" : String(count);
-
-  // TAMBAHAN: Efek "Bounce" pas ada notif baru masuk
   notifCountEl.animate([
     { transform: 'scale(1)' },
     { transform: 'scale(1.3)' },
     { transform: 'scale(1)' }
-  ], { 
-    duration: 300, 
-    easing: 'ease-out' 
-  });
+  ], { duration: 300, easing: 'ease-out' });
 }
 
-
+// ===== LOAD UNREAD NOTIF =====
 async function loadUnreadNotifications() {
   try {
-    const {
-      data: { user },
-      error: userError,
-    } = await db.auth.getUser();
-
+    const { data: { user }, error: userError } = await db.auth.getUser();
     if (userError || !user) {
       updateNotifBadge(0);
       return;
     }
-
     currentUserId = user.id;
-
     const { count, error } = await db
       .from("notifications")
       .select("*", { count: "exact", head: true })
@@ -853,134 +836,19 @@ async function loadUnreadNotifications() {
       .eq("is_read", false);
 
     if (error) throw error;
-
     updateNotifBadge(count || 0);
   } catch (err) {
     console.error("loadUnreadNotifications error:", err);
   }
 }
 
-async function markNotificationsAsRead() {
-  try {
-    if (!currentUserId) return;
-
-    const { error } = await db
-      .from("notifications")
-      .update({ is_read: true })
-      .eq("user_id", currentUserId)
-      .eq("is_read", false);
-
-    if (error) throw error;
-
-    updateNotifBadge(0);
-  } catch (err) {
-    console.error("markNotificationsAsRead error:", err);
-  }
-}
-
-async function subscribeNotifications() {
-  try {
-    const {
-      data: { user },
-      error: userError,
-    } = await db.auth.getUser();
-
-    if (userError || !user) return;
-
-    currentUserId = user.id;
-
-    // cleanup kalau sudah ada
-    if (notifChannel) {
-      db.removeChannel(notifChannel);
-      notifChannel = null;
-    }
-
-    notifChannel = db
-      .channel("user-notifications")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${user.id}`,
-        },
-        async (payload) => {
-          console.log("🔔 Notif baru:", payload);
-
-          // ambil count terbaru biar akurat
-          await loadUnreadNotifications();
-
-          // optional toast kecil
-          const row = payload.new;
-          if (row?.type === "like") {
-            showToast("Notifikasi baru", "Seseorang menyukai postinganmu", "info");
-          } else if (row?.type === "comment") {
-            showToast("Notifikasi baru", "Seseorang mengomentari postinganmu", "info");
-          } else {
-            showToast("Notifikasi baru", "Kamu punya notifikasi baru", "info");
-          }
-        }
-      )
-      .subscribe((status) => {
-        console.log("Notif realtime status:", status);
-      });
-  } catch (err) {
-    console.error("subscribeNotifications error:", err);
-  }
-}
-
-
-async function createLikeNotification(postId, postOwnerId, actorId) {
-  try {
-    if (!postOwnerId || !actorId) return;
-    if (postOwnerId === actorId) return; // jangan notif diri sendiri
-
-    const { error } = await db.from("notifications").insert({
-      user_id: postOwnerId,
-      actor_id: actorId,
-      post_id: postId,
-      type: "like",
-      message: "menyukai postinganmu",
-      is_read: false,
-    });
-
-    // kalau duplicate like notif, biarin aja
-    if (error && error.code !== "23505") throw error;
-  } catch (err) {
-    console.error("createLikeNotification error:", err);
-  }
-}
-async function createCommentNotification(postId, postOwnerId, actorId) {
-  try {
-    if (!postOwnerId || !actorId) return;
-    if (postOwnerId === actorId) return; // jangan notif diri sendiri
-
-    const { error } = await db.from("notifications").insert({
-      user_id: postOwnerId,
-      actor_id: actorId,
-      post_id: postId,
-      type: "comment",
-      message: "mengomentari postinganmu",
-      is_read: false,
-    });
-
-    if (error) throw error;
-  } catch (err) {
-    console.error("createCommentNotification error:", err);
-  }
-}
-// ==========================================
-// FULL FIX: LOAD NOTIFICATION LIST
-// ==========================================
+// ===== LOAD NOTIF LIST =====
 async function loadNotificationList() {
   if (!currentUserId) return;
-
-  let nList = document.getElementById("notificationList");
-  if (!nList) {
-    nList = document.createElement("div");
-    nList.id = "notificationList";
-    document.body.appendChild(nList);
+  if (!notifList) {
+    notifList = document.createElement("div");
+    notifList.id = "notificationList";
+    document.body.appendChild(notifList);
   }
 
   try {
@@ -994,63 +862,50 @@ async function loadNotificationList() {
     if (error) throw error;
 
     const isDark = document.body.classList.contains("dark");
-
-    // Header styling
     const headerBorder = isDark ? "#3f445e" : "#f0f0f0";
     const titleColor = isDark ? "#ffffff" : "#1a1a1a";
 
-    nList.innerHTML = `
-      <div style="padding: 5px 5px 15px 5px; border-bottom: 1px solid ${headerBorder}; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
-        <h2 style="margin: 0; font-size: 18px; font-weight: 800; color: ${titleColor};">Notifikasi</h2>
-        <span style="background: #1DA1F2; color: white; padding: 4px 10px; border-radius: 20px; font-size: 9px; font-weight: 700; letter-spacing: 0.5px;">LIVE</span>
+    notifList.innerHTML = `
+      <div style="padding:5px 5px 15px 5px; border-bottom:1px solid ${headerBorder}; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center;">
+        <h2 style="margin:0; font-size:18px; font-weight:800; color:${titleColor};">Notifikasi</h2>
+        <span style="background:#1DA1F2; color:white; padding:4px 10px; border-radius:20px; font-size:9px; font-weight:700;">LIVE</span>
       </div>
-      <ul id="notifItemsContainer" style="margin: 0; padding: 0; list-style: none;"></ul>
+      <ul id="notifItemsContainer" style="margin:0; padding:0; list-style:none;"></ul>
     `;
 
-    const container = nList.querySelector("#notifItemsContainer");
-
+    const container = notifList.querySelector("#notifItemsContainer");
     if (!data || data.length === 0) {
-      container.innerHTML = `<div style="text-align:center; padding: 40px 10px; color: #bbb; font-size: 13px;">Belum ada kabar terbaru... 🍃</div>`;
+      container.innerHTML = `<div style="text-align:center; padding:40px 10px; color:#bbb; font-size:13px;">Belum ada kabar terbaru... 🍃</div>`;
       return;
     }
 
-    data.forEach((n) => {
+    data.forEach(n => {
       const li = document.createElement("li");
-      let iconName = 'notifications'; 
-      let iconColor = '#1DA1F2'; 
-      
-      if (n.type === 'like') { iconName = 'favorite'; iconColor = '#FF3040'; }
-      else if (n.type === 'comment') { iconName = 'chat_bubble'; iconColor = '#00D084'; }
-
-      // Logika warna background & border yang aman dari syntax error
-      const bgUnread = isDark ? "rgba(29, 161, 242, 0.15)" : "rgba(29, 161, 242, 0.05)";
+      const bgUnread = isDark ? "rgba(29,161,242,0.15)" : "rgba(29,161,242,0.05)";
       const bgRead = isDark ? "#363b5e" : "#ffffff";
-      const borderColor = n.is_read ? (isDark ? "#444b75" : "#f0f0f0") : "rgba(29, 161, 242, 0.2)";
+      const borderColor = n.is_read ? (isDark ? "#444b75" : "#f0f0f0") : "rgba(29,161,242,0.2)";
       const textColor = isDark ? "#eeeeee" : "#333333";
 
       Object.assign(li.style, {
-        padding: "14px",
-        marginBottom: "10px",
-        borderRadius: "18px",
-        cursor: "pointer",
-        display: "flex",
-        alignItems: "center",
-        gap: "12px",
+        padding: "14px", marginBottom: "10px", borderRadius: "18px", cursor: "pointer",
+        display: "flex", alignItems: "center", gap: "12px",
         background: n.is_read ? bgRead : bgUnread,
-        border: "1px solid " + borderColor,
-        transition: "all 0.2s ease"
+        border: "1px solid " + borderColor, transition: "all 0.2s ease"
       });
 
+      let iconName = n.type === "like" ? "favorite" : n.type === "comment" ? "chat_bubble" : "notifications";
+      let iconColor = n.type === "like" ? "#FF3040" : n.type === "comment" ? "#00D084" : "#1DA1F2";
+
       li.innerHTML = `
-        <div style="background: ${iconColor}20; width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-          <span class="material-icons" style="color: ${iconColor}; font-size: 18px;">${iconName}</span>
+        <div style="background:${iconColor}20; width:38px; height:38px; border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+          <span class="material-icons" style="color:${iconColor}; font-size:18px;">${iconName}</span>
         </div>
-        <div style="flex: 1;">
-          <p style="margin: 0; font-size: 12px; color: ${textColor}; line-height: 1.4; font-weight: 500;">
-            <strong style="color: #1DA1F2;">Seseorang</strong> ${n.message}
+        <div style="flex:1;">
+          <p style="margin:0; font-size:12px; color:${textColor}; line-height:1.4; font-weight:500;">
+            <strong style="color:#1DA1F2;">Seseorang</strong> ${n.message}
           </p>
         </div>
-        ${!n.is_read ? '<div style="width: 6px; height: 6px; background: #1DA1F2; border-radius: 50%;"></div>' : ''}
+        ${!n.is_read ? '<div style="width:6px; height:6px; background:#1DA1F2; border-radius:50%;"></div>' : ''}
       `;
 
       li.onclick = async () => {
@@ -1061,104 +916,107 @@ async function loadNotificationList() {
           console.error("Redirect error:", e);
         }
       };
-
-      container.appendChild(li); 
+      container.appendChild(li);
     });
-
   } catch (err) {
     console.error("loadNotificationList error:", err);
   }
 }
 
-// FIX: LOGIKA KLIK LONCENG (SAFE VERSION)
-// ==========================================
-if (notifBell) {
-    // Tambahkan style pointer biar jelas bisa diklik
-    notifBell.style.cursor = "pointer";
+// ===== SUBSCRIBE REALTIME =====
+async function subscribeNotifications() {
+  try {
+    const { data: { user }, error: userError } = await db.auth.getUser();
+    if (userError || !user) return;
+    currentUserId = user.id;
 
-    notifBell.onclick = async (e) => {
-        e.stopPropagation();
-        console.log("🔔 Lonceng diklik!");
+    if (notifChannel) {
+      db.removeChannel(notifChannel);
+      notifChannel = null;
+    }
 
-        // 1. Ambil atau Buat list notif jika belum ada
-        let nList = document.getElementById("notificationList");
-        if (!nList) {
-            nList = document.createElement("div");
-            nList.id = "notificationList";
-            document.body.appendChild(nList);
+    notifChannel = db.channel("user-notifications")
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "notifications",
+        filter: `user_id=eq.${user.id}`,
+      }, async (payload) => {
+        if (!notificationsPaused) {
+          await loadUnreadNotifications();
+          const row = payload.new;
+          let msg = "Kamu punya notifikasi baru";
+          if (row?.type === "like") msg = "Seseorang menyukai postinganmu";
+          else if (row?.type === "comment") msg = "Seseorang mengomentari postinganmu";
+          showToast("Notifikasi", msg, "info");
         }
-
-        // 2. Jika sedang terbuka, maka tutup
-        if (nList.style.display === "flex") {
-            closeNotif();
-            return;
-        }
-
-        // 3. Load konten & Tandai sudah baca
-        await loadNotificationList();
-        if (typeof markNotificationsAsRead === "function") await markNotificationsAsRead();
-
-        // 4. Munculkan Overlay
-        let overlay = document.getElementById("notifOverlay");
-        if (!overlay) {
-            overlay = document.createElement("div");
-            overlay.id = "notifOverlay";
-            document.body.appendChild(overlay);
-        }
-
-        // Styling Overlay (Gunakan String untuk nilai properti)
-        Object.assign(overlay.style, {
-            display: "block",
-            position: "fixed",
-            top: "0", left: "0", width: "100vw", height: "100vh",
-            background: "rgba(0,0,0,0.5)",
-            backdropFilter: "blur(6px)",
-            webkitBackdropFilter: "blur(6px)",
-            zIndex: "10000",
-            opacity: "0",
-            transition: "opacity 0.3s ease"
-        });
-        overlay.onclick = closeNotif;
-
-        // 5. Styling Box Notifikasi (Warna adaptif Dark Mode)
-        const isDark = document.body.classList.contains("dark");
-        Object.assign(nList.style, {
-            display: "flex",
-            flexDirection: "column",
-            position: "fixed",
-            top: "50%", left: "50%",
-            transform: "translate(-50%, -50%)",
-            width: "88vw", maxWidth: "380px", maxHeight: "75vh",
-            background: isDark ? "#2b3050" : "#ffffff", // Ngikutin tema HopeHype
-            zIndex: "10001",
-            borderRadius: "28px",
-            boxShadow: "0 20px 60px rgba(0,0,0,0.4)",
-            padding: "20px",
-            overflowY: "auto",
-            opacity: "0",
-            transition: "opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
-        });
-
-        // Animasi masuk
-        requestAnimationFrame(() => {
-            overlay.style.opacity = "1";
-            nList.style.opacity = "1";
-        });
-    };
+      })
+      .subscribe();
+  } catch (err) {
+    console.error("subscribeNotifications error:", err);
+  }
 }
 
-// Fungsi Tutup tetap sama tapi pastiin ambil elemen yang benar
+// ===== CLICK NOTIF BELL =====
+if (notifBell) {
+  notifBell.onclick = async (e) => {
+    e.stopPropagation();
+    notificationsPaused = true; 
+
+    if (notifCountEl) {
+      notifCountEl.style.display = "none";
+      notifCountEl.textContent = "0";
+    }
+
+    try {
+      await db.from("notifications")
+        .update({ is_read: true })
+        .eq("user_id", currentUserId)
+        .eq("is_read", false);
+    } catch (err) {
+      console.error("Gagal update permanen:", err);
+    }
+
+    await loadNotificationList();
+    
+    setTimeout(() => { notificationsPaused = false; }, 2000);
+
+    let overlay = document.getElementById("notifOverlay");
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.id = "notifOverlay";
+      document.body.appendChild(overlay);
+    }
+
+    Object.assign(overlay.style, {
+      display: "block", position: "fixed", top: "0", left: "0", width: "100vw", height: "100vh",
+      background: "rgba(0,0,0,0.5)", backdropFilter: "blur(6px)", zIndex: "10000", opacity: "0", transition: "opacity 0.3s ease"
+    });
+    overlay.onclick = closeNotif;
+
+    Object.assign(notifList.style, {
+      display: "flex", flexDirection: "column", position: "fixed", top: "50%", left: "50%",
+      transform: "translate(-50%, -50%)", width: "88vw", maxWidth: "380px", maxHeight: "75vh",
+      background: document.body.classList.contains("dark") ? "#2b3050" : "#ffffff",
+      zIndex: "10001", borderRadius: "28px", boxShadow: "0 20px 60px rgba(0,0,0,0.4)",
+      padding: "20px", overflowY: "auto", opacity: "0", transition: "opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+    });
+
+    requestAnimationFrame(() => {
+      overlay.style.opacity = "1";
+      notifList.style.opacity = "1";
+    });
+  };
+}
+
 function closeNotif() {
-    const nList = document.getElementById("notificationList");
-    const overlay = document.getElementById("notifOverlay");
-    
-    if (nList) nList.style.opacity = "0";
-    if (overlay) overlay.style.opacity = "0";
-    
-    setTimeout(() => {
-        if (nList) nList.style.display = "none";
-        if (overlay) overlay.remove();
-    }, 300);
+  const overlay = document.getElementById("notifOverlay");
+  if (notifList) notifList.style.opacity = "0";
+  if (overlay) overlay.style.opacity = "0";
+  setTimeout(() => {
+    if (notifList) notifList.style.display = "none";
+    if (overlay) overlay.remove();
+  }, 300);
 }
 
 // =======================
