@@ -1407,4 +1407,128 @@ body.dark .recent-card .details h4 {
 #logoutBtn:hover {
     background: #ffe4e9;
 }
- 
+.top-notif {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notif-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notification-icon {
+  font-size: 20px;
+  color: #000; /* mode terang = hitam */
+  cursor: pointer;
+  transition: color 0.3s ease, transform 0.2s ease;
+  background: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  line-height: 1;
+}
+
+.notification-icon:hover {
+  transform: scale(1.08);
+}
+
+/* INI YANG BENER KARENA JS KAMU PAKAI .dark */
+body.dark .notification-icon {
+  color: #fff; /* mode gelap = putih */
+}
+
+.notif-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: #FF3040; /* Merah Berani */
+  color: white;
+  font-size: 10px;
+  font-weight: 800;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 50%;
+  display: flex; /* Nanti diatur JS: none/flex */
+  justify-content: center;
+  align-items: center;
+  border: 2px solid #fff; /* Biar keliatan misah dari ikon */
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* CSS ANTI-BLUR & ANTI-TENGGELAM */
+#notificationList {
+  display: none; /* Default sembunyi */
+  flex-direction: column;
+  position: fixed;
+  z-index: 10001; /* Pastikan di atas segalanya */
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  
+  width: 85%; 
+  max-width: 380px;
+  max-height: 75vh;
+  overflow-y: auto;
+
+  /* Background Solid agar tidak Vlut/Blur */
+  background: #ffffff !important; 
+  border-radius: 28px;
+  padding: 20px;
+  box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+  
+  /* Matikan filter yang bikin berat/blur */
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  
+  /* Ketajaman Teks */
+  color: #1a1a1a !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Mode Gelap (Dark Mode HopeHype) */
+body.dark #notificationList {
+  background: #1e2235 !important; /* Warna gelap khas dashboard kamu */
+  color: #ffffff !important;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* Overlay biar fokus */
+#notifOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 10000;
+  display: none;
+  backdrop-filter: blur(4px); /* Blur hanya di background belakang, bukan di listnya */
+}
+/* PAKSA LONCENG JADI PRIORITAS KLIK */
+#notifBell {
+  position: relative !important;
+  z-index: 99999 !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  padding: 15px !important; 
+  
+  /* Nilai kedua (8px) ini yang ngatur jarak ke kanan (toggle). 
+     Makin kecil angkanya, lonceng makin ke kanan (balik ke asal). */
+  margin: -15px -5px -15px -15px !important; 
+  
+  display: inline-block !important;
+  -webkit-tap-highlight-color: rgba(0,0,0,0.1) !important;
+}
+
+/* Pastikan angka notif merahnya gak ngeblok klik */
+#notifCount {
+  pointer-events: none !important; 
+  z-index: 100000 !important;
+}
