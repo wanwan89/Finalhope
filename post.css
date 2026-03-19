@@ -1114,3 +1114,302 @@ color:#fff;
 .icon-btn:active svg {
     transform: scale(0.8); /* Efek membal saat diklik */
 }
+/* =========================
+   TIKTOK STYLE GIFT SHEET
+========================= */
+.gift-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: none;
+}
+
+.gift-sheet.active {
+  display: block;
+}
+
+.gift-sheet-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(2px);
+}
+
+.gift-sheet-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 72vh;
+  background: #171717;
+  color: #fff;
+  border-radius: 22px 22px 0 0;
+  transform: translateY(100%);
+  transition: transform 0.32s ease;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.4);
+}
+
+.gift-sheet.active .gift-sheet-panel {
+  transform: translateY(0);
+}
+
+/* TOP BAR */
+.gift-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px 10px;
+  font-size: 13px;
+  color: #d5d5d5;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.gift-pin-btn {
+  background: transparent;
+  border: none;
+  color: #ff2d6f;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* TARGET BAR */
+.gift-target-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+}
+
+.gift-target-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.gift-target-label {
+  font-size: 13px;
+  color: #9a9a9a;
+}
+
+.gift-target-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.gift-balance-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #232323;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.coin-icon {
+  font-size: 14px;
+}
+/* Container Utama */
+.gift-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: none; /* Default sembunyi */
+  align-items: flex-end;
+}
+
+.gift-sheet.active {
+  display: flex;
+}
+
+.gift-sheet-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(2px);
+}
+
+/* Konten Slide Up */
+.gift-sheet-content {
+  position: relative;
+  width: 100%;
+  background: #181818;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px 20px 0 0;
+  padding: 10px 15px 30px 15px;
+  transform: translateY(100%);
+  transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+  z-index: 10001;
+}
+
+.gift-sheet.active .gift-sheet-content {
+  transform: translateY(0);
+}
+
+.sheet-handle {
+  width: 40px;
+  height: 4px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 2px;
+  margin: 0 auto 15px auto;
+}
+
+.gift-header {
+  display: flex;
+  justify-content: space-between;
+  color: #aaa;
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+
+.gift-close-x {
+  font-size: 20px;
+  cursor: pointer;
+}
+
+/* Grid & Item */
+.gift-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.gift-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  background: rgba(255,255,255,0.03);
+  transition: 0.2s;
+}
+
+.gift-item.active {
+  background: rgba(255, 45, 85, 0.1);
+  border-color: #ff2d55;
+}
+
+.gift-img-container {
+  width: 55px;
+  height: 55px;
+  margin-bottom: 5px;
+}
+
+.img-gift {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.gift-name { font-size: 11px; color: #fff; }
+.gift-price { font-size: 12px; color: #ffd700; display: flex; align-items: center; gap: 3px; }
+.img-coin-inline { width: 12px; }
+
+/* Footer */
+.gift-footer {
+  margin-top: 25px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 15px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+.user-coins-info {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #fff;
+  font-weight: 600;
+}
+
+.img-coin-footer { width: 20px; }
+
+.btn-send-gift {
+  background: #ff2d55;
+  color: white;
+  border: none;
+  padding: 10px 30px;
+  border-radius: 25px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.btn-send-gift:disabled { background: #333; color: #666; }
+ 
+/* Efek Cahaya Meledak di Latar */
+.glow-bg {
+    position: absolute;
+    width: 100px; height: 100px;
+    background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,215,0,0) 70%);
+    border-radius: 50%;
+    animation: explodeGlow 2.5s ease-out forwards;
+}
+
+.meriah-text {
+    font-family: 'Inter', sans-serif;
+    font-size: 5rem;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: -5px; /* Awalnya rapet banget */
+    text-transform: uppercase;
+    text-align: center;
+    line-height: 1;
+    
+    /* Efek Bayangan Cinematic */
+    filter: drop-shadow(0 0 20px rgba(255,255,255,0.5));
+    
+    /* Animasi Teks Meledak */
+    animation: cinematicText 2.5s cubic-bezier(0.15, 0.85, 0.35, 1) forwards;
+}
+
+/* Animasi Cahaya Latar */
+@keyframes explodeGlow {
+    0% { transform: scale(0); opacity: 1; filter: blur(0px); }
+    30% { transform: scale(30); opacity: 0.5; filter: blur(50px); }
+    100% { transform: scale(50); opacity: 0; filter: blur(100px); }
+}
+
+/* Animasi Teks Utama */
+@keyframes cinematicText {
+    0% { 
+        transform: scale(0.5); 
+        letter-spacing: -20px; 
+        opacity: 0; 
+        filter: blur(20px) brightness(5);
+    }
+    15% { 
+        opacity: 1; 
+        filter: blur(0px) brightness(1.5);
+    }
+    25% {
+        letter-spacing: 15px; /* Hurufnya merenggang drastis */
+    }
+    80% { 
+        opacity: 1; 
+        transform: scale(1.1);
+        letter-spacing: 20px;
+        filter: blur(0px) brightness(1);
+    }
+    100% { 
+        transform: scale(1.5); 
+        opacity: 0; 
+        filter: blur(15px) brightness(2);
+        letter-spacing: 30px;
+    }
+}
+
+/* Biar gak aneh di HP */
+@media (max-width: 768px) {
+    .meriah-text { font-size: 1.5rem; letter-spacing: -2px; }
+}
+
+ 

@@ -1,26 +1,33 @@
-let isMidtransLoading = false; // Flag baru
+// =======================
+// GLOBAL VARIABLES
+// =======================
+let isMidtransLoading = false;
 
+// =======================
+// MIDTRANS LOADER
+// =======================
 function loadMidtrans() {
   if (window.snap) return;
-  if (isMidtransLoading) return; // Stop jika sedang loading
+  if (isMidtransLoading) return;
 
   isMidtransLoading = true;
   const script = document.createElement("script");
   script.src = "https://app.sandbox.midtrans.com/snap/snap.js";
   script.setAttribute("data-client-key", "SB-Mid-client-G2wOVrrTwcffYhkC");
   script.async = true;
-  
+
   script.onload = () => {
     console.log("✅ Midtrans Snap loaded!");
     isMidtransLoading = false;
   };
+
   script.onerror = () => {
     console.error("❌ Gagal memuat Midtrans");
     isMidtransLoading = false;
   };
+
   document.head.appendChild(script);
 }
-
 
 // =======================
 // DYNAMIC BADGE SYSTEM
@@ -63,7 +70,6 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
- 
 // =======================
 // AUDIO PLAYER
 // =======================
@@ -83,7 +89,7 @@ if (savedSong && audioPlayer) {
 }
 
 // =======================
-// CARDS
+// CARDS & THEME IMAGES
 // =======================
 const karyaCard = document.querySelector(".job-card.karya-card");
 const musicCard = document.querySelector(".job-card.music-card");
@@ -101,10 +107,7 @@ function CardImages(isDark) {
 }
 
 // =======================
-// DARK MODE
-// =======================
-// =======================
-// DARK MODE
+// DARK MODE LOGIC
 // =======================
 const toggleBtn = document.querySelector(".toggle-dark");
 
@@ -118,16 +121,12 @@ function applyTheme(isDark) {
 if (toggleBtn) {
   const savedTheme = localStorage.getItem("theme");
   const isAutoDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-
-  const isDark = savedTheme
-    ? savedTheme === "dark"
-    : isAutoDark;
+  const isDark = savedTheme ? savedTheme === "dark" : isAutoDark;
 
   applyTheme(isDark);
 
   toggleBtn.addEventListener("change", () => {
     document.body.classList.add("theme-transition");
-
     const newDark = toggleBtn.checked;
     applyTheme(newDark);
     localStorage.setItem("theme", newDark ? "dark" : "light");
@@ -142,6 +141,7 @@ if (toggleBtn) {
   const isDark = savedTheme ? savedTheme === "dark" : isAutoDark;
   applyTheme(isDark);
 }
+
 // =======================
 // 3D HOVER TILT
 // =======================
@@ -165,8 +165,6 @@ document.querySelectorAll(".job-card, .recent-card").forEach((card) => {
 // =======================
 // SEARCH FILTER
 // =======================
-// NOTE: HTML kamu sekarang belum ada input search di home.html.
-// Kalau nanti kamu tambahin, selector ini aman.
 const searchInput =
   document.querySelector(".search input") ||
   document.getElementById("searchInput") ||
@@ -175,9 +173,8 @@ const searchInput =
 const cards = document.querySelectorAll(".job-card, .recent-card");
 
 if (searchInput) {
-  searchInput.addEventListener("keyup", function () {
+  searchInput.addEventListener("keyup", function() {
     const value = this.value.toLowerCase();
-
     cards.forEach((card) => {
       const text = card.innerText.toLowerCase();
       card.style.display = text.includes(value) ? "" : "none";
@@ -189,7 +186,6 @@ if (searchInput) {
 // CARD BUTTON REDIRECT
 // =======================
 const artButton = document.getElementById("artButton");
-
 if (artButton && karyaCard) {
   artButton.addEventListener("click", (e) => {
     e.preventDefault();
@@ -199,7 +195,6 @@ if (artButton && karyaCard) {
 }
 
 const songButton = document.querySelector(".music-card .button");
-
 if (songButton && musicCard) {
   songButton.addEventListener("click", (e) => {
     e.preventDefault();
@@ -213,7 +208,6 @@ if (songButton && musicCard) {
 // =======================
 function preloadImages(urls, callback) {
   let loaded = 0;
-
   if (!urls.length) {
     if (callback) callback();
     return;
@@ -238,27 +232,7 @@ preloadImages(["job1.png", "job.png", "art.png", "song.png"], () => {
 });
 
 // =======================
-// PROFILE MENU (OPTIONAL)
-// =======================
-// NOTE: Tambahin id="userProfile" dan id="profileMenu" di HTML kalau mau aktif.
-const profile = document.getElementById("userProfile");
-const menu = document.getElementById("profileMenu");
-
-if (profile && menu) {
-  profile.addEventListener("click", (e) => {
-    e.stopPropagation();
-    menu.style.display = menu.style.display === "flex" ? "none" : "flex";
-  });
-
-  document.addEventListener("click", (e) => {
-    if (!menu.contains(e.target) && !profile.contains(e.target)) {
-      menu.style.display = "none";
-    }
-  });
-}
-
-// =======================
-// AVATAR MENU
+// AVATAR & PROFILE MENU
 // =======================
 const avatar = document.getElementById("avatar");
 const avatarMenu = document.getElementById("avatarMenu");
@@ -277,7 +251,7 @@ if (avatar && avatarMenu) {
 }
 
 // =======================
-// SETTINGS MODAL + PROFILE
+// SETTINGS MODAL
 // =======================
 const settingsBtn = document.getElementById("settingsBtn");
 const settingsModal = document.getElementById("settingsModal");
@@ -291,11 +265,10 @@ const avatarOptions = document.querySelectorAll("#avatarOptions .avatar-choice")
 let selectedAvatar = null;
 let uploadedAvatarData = null;
 
-// buka modal
 if (settingsBtn && settingsModal) {
   settingsBtn.addEventListener("click", () => {
     settingsModal.classList.add("active");
-    avatarMenu && (avatarMenu.style.display = "none");
+    if (avatarMenu) avatarMenu.style.display = "none";
 
     const usernameEl = document.getElementById("username");
     if (usernameEl && newUsernameInput) {
@@ -306,34 +279,28 @@ if (settingsBtn && settingsModal) {
   });
 }
 
-// tutup modal
 if (closeSettings && settingsModal) {
   closeSettings.addEventListener("click", () => {
     settingsModal.classList.remove("active");
   });
 }
 
-// klik di luar modal-content tutup modal
 if (settingsModal) {
   settingsModal.addEventListener("click", (e) => {
     if (e.target === settingsModal) settingsModal.classList.remove("active");
   });
 }
 
-// pilih avatar dari pilihan
 avatarOptions.forEach((img) => {
   img.addEventListener("click", () => {
     selectedAvatar = img.getAttribute("src");
     uploadedAvatarData = null;
-
     if (avatarPreview) avatarPreview.src = selectedAvatar;
-
     avatarOptions.forEach((i) => i.classList.remove("selected"));
     img.classList.add("selected");
   });
 });
 
-// preview upload avatar file
 if (avatarUpload && avatarPreview) {
   avatarUpload.addEventListener("change", (e) => {
     const file = e.target.files?.[0];
@@ -350,7 +317,6 @@ if (avatarUpload && avatarPreview) {
   });
 }
 
-// save profile (username + avatar)
 if (saveSettings) {
   saveSettings.addEventListener("click", async () => {
     try {
@@ -370,12 +336,11 @@ if (saveSettings) {
       const updatePayload = { username: newUsername };
       if (avatarToSave) updatePayload.avatar_url = avatarToSave;
 
-      // UPDATE & LANGSUNG AMBIL DATA TERBARU
       const { data: updatedProfile, error } = await db
         .from("profiles")
         .update(updatePayload)
         .eq("id", user.id)
-        .select("username, role, avatar_url") // Ambil data kembalian
+        .select("username, role, avatar_url")
         .single();
 
       if (error) {
@@ -386,7 +351,6 @@ if (saveSettings) {
         throw error;
       }
 
-      // UPDATE UI
       const usernameEl = document.getElementById("username");
       const avatarEl = document.getElementById("avatar");
 
@@ -395,16 +359,14 @@ if (saveSettings) {
       }
 
       if (avatarEl && updatedProfile.avatar_url) {
-  const cacheBuster = `?t=${Date.now()}`;
-  
-  const finalSrc = updatedProfile.avatar_url.startsWith("data:image") 
-    ? updatedProfile.avatar_url 
-    : updatedProfile.avatar_url + cacheBuster;
+        const cacheBuster = `?t=${Date.now()}`;
+        const finalSrc = updatedProfile.avatar_url.startsWith("data:image") 
+          ? updatedProfile.avatar_url 
+          : updatedProfile.avatar_url + cacheBuster;
+        avatarEl.src = finalSrc;
+        if (avatarPreview) avatarPreview.src = finalSrc;
+      }
 
-  avatarEl.src = finalSrc;
-  
-  if (avatarPreview) avatarPreview.src = finalSrc;
-}
       if (settingsModal) settingsModal.classList.remove("active");
       showToast("Profil diperbarui", "Foto dan username berhasil diubah!", "success");
 
@@ -415,14 +377,13 @@ if (saveSettings) {
   });
 }
 
-/* =======================
-   TOAST MODERN
-======================= */
+// =======================
+// TOAST SYSTEM
+// =======================
 let toastTimer;
 
 function showToast(title, message = "", type = "info") {
   let toast = document.getElementById("toast");
-
   if (!toast) {
     toast = document.createElement("div");
     toast.id = "toast";
@@ -430,43 +391,31 @@ function showToast(title, message = "", type = "info") {
   }
 
   clearTimeout(toastTimer);
-
   toast.className = "";
   toast.innerHTML = `
     <div class="toast-icon-wrap ${type}">
       <div class="toast-icon">${getToastIcon(type)}</div>
     </div>
-
     <div class="toast-content">
       <div class="toast-title">${title}</div>
       ${message ? `<div class="toast-subtitle">${message}</div>` : ""}
     </div>
-
     <button class="toast-close" aria-label="Close">✕</button>
   `;
 
   toast.classList.add("toast-card", type);
-
-  requestAnimationFrame(() => {
-    toast.classList.add("show");
-  });
+  requestAnimationFrame(() => toast.classList.add("show"));
 
   const closeBtn = toast.querySelector(".toast-close");
-  if (closeBtn) {
-    closeBtn.onclick = () => hideToast();
-  }
+  if (closeBtn) closeBtn.onclick = () => hideToast();
 
-  toastTimer = setTimeout(() => {
-    hideToast();
-  }, 3200);
+  toastTimer = setTimeout(() => hideToast(), 3200);
 }
 
 function hideToast() {
   const toast = document.getElementById("toast");
   if (!toast) return;
-
   toast.classList.remove("show");
-
   setTimeout(() => {
     toast.className = "";
     toast.innerHTML = "";
@@ -475,14 +424,10 @@ function hideToast() {
 
 function getToastIcon(type) {
   switch (type) {
-    case "success":
-      return "✓";
-    case "warning":
-      return "⚠";
-    case "error":
-      return "!";
-    default:
-      return "i";
+    case "success": return "✓";
+    case "warning": return "⚠";
+    case "error":   return "!";
+    default:        return "i";
   }
 }
 
@@ -491,25 +436,19 @@ function getToastIcon(type) {
 // =======================
 async function checkPopup() {
   try {
-    console.log("Checking pop-up status...");
-
     const { data, error } = await db
       .from("site_settings")
       .select("*")
       .eq("id", 1)
       .single();
 
-    if (error || !data || data.popup_active !== true) {
-      console.log("Pop-up is inactive or error occurred.");
-      return;
-    }
+    if (error || !data || data.popup_active !== true) return;
 
     const popup = document.getElementById("ad-popup");
     const desc = document.getElementById("popup-desc");
     const img = document.getElementById("popup-img");
 
     if (desc) desc.textContent = data.popup_text || "";
-
     if (img) {
       if (data.popup_image) {
         img.src = data.popup_image;
@@ -518,18 +457,14 @@ async function checkPopup() {
         img.style.display = "none";
       }
     }
-
-    if (popup) {
-      popup.style.display = "flex";
-      console.log("Pop-up displayed successfully!");
-    }
+    if (popup) popup.style.display = "flex";
   } catch (err) {
     console.error("checkPopup error:", err);
   }
 }
 
 // =======================
-// LOGIN / LOGOUT & PROFILE
+// USER LOADING & AUTH
 // =======================
 async function loadUser() {
   try {
@@ -537,46 +472,40 @@ async function loadUser() {
     if (sessionError || !session) return;
 
     const user = session.user;
-    const usernameEl = document.getElementById("username");
-    const avatarEl = document.getElementById("avatar");
-
     const { data: profile, error: profileError } = await db
       .from("profiles")
-      .select("username, role, avatar_url")
+      .select("username, role, avatar_url, coins")
       .eq("id", user.id)
       .single();
 
-    if (profile && !profileError) {
-      // Username + badge
+    if (profileError) return;
+
+    if (profile) {
+      const usernameEl = document.getElementById("username");
+      const avatarEl = document.getElementById("avatar");
+      const coinEl = document.getElementById("coinAmount");
+
       if (usernameEl) {
         usernameEl.innerHTML = `${profile.username || user.email.split("@")[0]} ${getUserBadge(profile.role)}`;
       }
 
-      // Avatar FIX
       if (avatarEl) {
-        if (profile.avatar_url) {
-          const avatarSrc = profile.avatar_url.startsWith("data:image")
-            ? profile.avatar_url
-            : profile.avatar_url + "?t=" + Date.now();
-
-          avatarEl.src = avatarSrc;
-
-          if (avatarPreview) {
-            avatarPreview.src = avatarSrc;
-          }
-        } else {
-          // fallback default avatar kalau kosong
-          avatarEl.src = "default-avatar.png";
-          if (avatarPreview) avatarPreview.src = "default-avatar.png";
-        }
+        const avatarSrc = profile.avatar_url 
+          ? (profile.avatar_url.startsWith("data:image") ? profile.avatar_url : profile.avatar_url + "?t=" + Date.now())
+          : "default-avatar.png";
+        avatarEl.src = avatarSrc;
+        if (avatarPreview) avatarPreview.src = avatarSrc;
       }
+
+      if (coinEl) coinEl.textContent = profile.coins ?? 0;
     }
   } catch (err) {
     console.error("loadUser error:", err);
   }
 }
+
 // =======================
-// TOMBOL PRO + LIVECHAT
+// VIP & COIN BOTTOM SHEETS
 // =======================
 const buyBtnElement = document.getElementById("buyVerified");
 const bSheet = document.getElementById("vip-bottom-sheet");
@@ -586,216 +515,187 @@ if (buyBtnElement && bSheet) {
   buyBtnElement.onclick = (e) => {
     e.preventDefault();
     e.stopPropagation();
-
     bSheet.style.display = "flex";
-
-    // PERBAIKAN: Cek dulu apakah fungsi call ada
-    if (window.LiveChatWidget && typeof window.LiveChatWidget.call === 'function') {
-      try {
-        window.LiveChatWidget.call("hide_widget");
-      } catch (err) {
-        console.warn("LiveChat hide failed:", err);
-      }
-    }
-
-    setTimeout(() => {
-      bSheet.classList.add("active");
-    }, 10);
+    if (window.LiveChatWidget?.call) window.LiveChatWidget.call("hide_widget");
+    setTimeout(() => bSheet.classList.add("active"), 10);
   };
 }
 
-// Ganti bagian bOverlay.onclick kamu menjadi ini:
 if (bOverlay && bSheet) {
   bOverlay.onclick = () => {
     bSheet.classList.remove("active");
+    if (window.LiveChatWidget?.call) window.LiveChatWidget.call("maximize_widget");
+    setTimeout(() => bSheet.style.display = "none", 400);
+  };
+}
 
-    // Gunakan pengecekan yang lebih aman
-    if (window.LiveChatWidget && typeof window.LiveChatWidget.call === 'function') {
-      try {
-        window.LiveChatWidget.call("maximize_widget");
-      } catch (e) {
-        console.warn("LiveChat maximize failed", e);
-      }
-    }
+const topupKoinBtn = document.getElementById("topupKoinBtn");
+const coinSheet = document.getElementById("coin-bottom-sheet");
+const coinOverlay = document.querySelector(".coin-sheet-overlay");
 
-    setTimeout(() => {
-      bSheet.style.display = "none";
-    }, 400);
+if (topupKoinBtn && coinSheet) {
+  topupKoinBtn.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    coinSheet.style.display = "flex";
+    if (window.LiveChatWidget?.call) window.LiveChatWidget.call("hide_widget");
+    setTimeout(() => coinSheet.classList.add("active"), 10);
+  };
+}
+
+if (coinOverlay && coinSheet) {
+  coinOverlay.onclick = () => {
+    coinSheet.classList.remove("active");
+    if (window.LiveChatWidget?.call) window.LiveChatWidget.call("maximize_widget");
+    setTimeout(() => coinSheet.style.display = "none", 400);
   };
 }
 
 // =======================
-// AUTH MENU
+// AUTH LOGIC
 // =======================
 async function updateAuthMenu() {
-  try {
-    const logoutBtn = document.getElementById("logoutBtn");
-    if (!logoutBtn) return;
-
-    const {
-      data: { session },
-      error,
-    } = await db.auth.getSession();
-
-    if (error) throw error;
-
-    const user = session?.user;
-
-    logoutBtn.textContent = user ? "Logout" : "Login";
-  } catch (err) {
-    console.error("updateAuthMenu error:", err);
-
-    // fallback aman kalau session hilang
-    const logoutBtn = document.getElementById("logoutBtn");
-    if (logoutBtn) logoutBtn.textContent = "Login";
-  }
+  const logoutBtn = document.getElementById("logoutBtn");
+  if (!logoutBtn) return;
+  const { data: { session } } = await db.auth.getSession();
+  logoutBtn.textContent = session ? "Logout" : "Login";
 }
+
 document.getElementById("logoutBtn")?.addEventListener("click", async () => {
   try {
     if (notifChannel) {
       db.removeChannel(notifChannel);
       notifChannel = null;
     }
-
-    const {
-      data: { session },
-    } = await db.auth.getSession();
-
-    if (session) {
-      const { error } = await db.auth.signOut();
-
-      if (error && error.message !== "Auth session missing!") {
-        throw error;
-      }
-    }
+    const { data: { session } } = await db.auth.getSession();
+    if (session) await db.auth.signOut();
 
     localStorage.clear();
     sessionStorage.clear();
     window.location.href = "login.html";
   } catch (err) {
     console.error("Logout error:", err);
-
-    if (err.message === "Auth session missing!") {
-      localStorage.clear();
-      sessionStorage.clear();
-      window.location.href = "index.html";
-      return;
-    }
-
-    showToast("Gagal logout", err.message, "error");
+    localStorage.clear();
+    window.location.href = "index.html";
   }
 });
-// =======================
-//  APP
-// =======================
-const initApp = async () => {
-  try {
-    await updateAuthMenu();
-    await loadUser();
-    await loadUnreadNotifications();
-    await subscribeNotifications(); // ✅ pastikan ini namanya benar
-    await checkPopup();
-  } catch (err) {
-    console.error("initApp error:", err);
-  }
-};
 
-initApp();
- 
- 
-// ==========================================
-// LOGIKA BELI DENGAN EFEK PARTIKEL & LOADING
-// ==========================================
-document.querySelectorAll(".buy-now-btn").forEach((button) => {
+// =======================
+// PAYMENT HANDLERS
+// =======================
+document.querySelectorAll(".buy-now-btn, .buy-coin-btn").forEach((button) => {
   button.onclick = async (e) => {
     const btn = e.currentTarget;
+    const isCoin = btn.classList.contains("buy-coin-btn");
+    const card = btn.closest(isCoin ? ".coin-product-card" : ".product-card");
 
-    createParticles(e.clientX, e.clientY);
+    if (!card) return;
     btn.classList.add("btn-loading");
 
-    const card = btn.closest(".product-card");
-    if (!card) {
-      btn.classList.remove("btn-loading");
-      return;
-    }
-
-    const price = card.getAttribute("data-price");
+    const price = parseInt(card.getAttribute("data-price"), 10);
     const role = card.getAttribute("data-role");
-    const name = card.querySelector(".p-name")?.innerText || "Premium";
+    const coins = card.getAttribute("data-coins");
+    const name = card.querySelector(".p-name")?.innerText || "Item";
 
     try {
-      const {
-        data: { user },
-        error: userError,
-      } = await db.auth.getUser();
-
-      if (userError) throw userError;
-
-      if (!user) {
-        btn.classList.remove("btn-loading");
+      const { data: { session } } = await db.auth.getSession();
+      if (!session) {
         showToast("Belum login", "Silakan login dulu!", "warning");
+        btn.classList.remove("btn-loading");
         return;
       }
 
-      const response = await fetch("https://hqetnqnvmdxdgfnnluew.supabase.co/functions/v1/pay-premium", {
+      if (!window.snap) {
+        loadMidtrans();
+        showToast("Menyiapkan pembayaran", "Klik beli lagi sebentar lagi", "info");
+        btn.classList.remove("btn-loading");
+        return;
+      }
+
+      const endpoint = isCoin ? "pay-coins" : "pay-premium";
+      const payload = isCoin 
+        ? { userId: session.user.id, email: session.user.email, amount: price, coins: parseInt(coins), item_name: name }
+        : { userId: session.user.id, email: session.user.email, amount: price, item_name: name, role_target: role };
+
+      const response = await fetch(`https://hqetnqnvmdxdgfnnluew.supabase.co/functions/v1/${endpoint}`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({
-          userId: user.id,
-          email: user.email,
-          amount: parseInt(price, 10),
-          item_name: name,
-          role_target: role,
-        }),
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify(payload),
       });
 
-      if (!response.ok) {
-        const text = await response.text();
-        console.error("Server response:", text);
-        throw new Error("Gagal menghubungi server pembayaran");
-      }
-
       const result = await response.json();
-      const token = result?.token;
-
       btn.classList.remove("btn-loading");
 
-      if (!token) {
-        throw new Error("Token pembayaran tidak ditemukan");
-      }
-
-      if (window.snap) {
-        window.snap.pay(token, {
+      if (result.token) {
+        window.snap.pay(result.token, {
           onSuccess: () => {
-            showToast("Pembayaran berhasil", "Status akun akan diperbarui", "success");
+            showToast("Berhasil!", "Data akan diperbarui", "success");
             setTimeout(() => location.reload(), 1200);
           },
-          onPending: () => {
-            showToast("Menunggu pembayaran", "Selesaikan transaksi terlebih dahulu", "warning");
-          },
-          onError: () => {
-            showToast("Pembayaran gagal", "Silakan coba lagi", "error");
-          },
-          onClose: () => {
-            showToast("Popup ditutup", "Pembayaran belum selesai", "info");
-          },
+          onPending: () => showToast("Menunggu pembayaran", "", "warning"),
+          onError: () => showToast("Gagal!", "Coba lagi", "error"),
+          onClose: () => showToast("Dibatalkan", "", "info")
         });
-      } else {
-        loadMidtrans();
-        showToast("Menyiapkan koneksi aman", "Silakan klik tombol beli lagi", "info");
       }
     } catch (err) {
-      console.error("Error:", err);
+      console.error(err);
       btn.classList.remove("btn-loading");
-      showToast("Koneksi gagal", err.message || "Terjadi kesalahan ke server pembayaran", "error");
+      showToast("Koneksi gagal", err.message, "error");
     }
   };
 });
+
 // =======================
-// NOTIFICATION SYSTEM (FIXED STRUCTURE)
+// CUSTOM COIN
+// =======================
+const COIN_PRICE = 100;
+const customInput = document.getElementById("custom-coins");
+const customBtn = document.getElementById("buy-custom-coin-btn");
+const priceDisplay = document.getElementById("custom-price-display");
+
+if (customInput && priceDisplay) {
+  customInput.addEventListener("input", () => {
+    const coins = parseInt(customInput.value) || 0;
+    priceDisplay.textContent = coins > 0 ? `Total: Rp ${(coins * COIN_PRICE).toLocaleString()}` : "";
+  });
+}
+
+if (customBtn) {
+  customBtn.addEventListener("click", async () => {
+    const coins = parseInt(customInput.value);
+    if (!coins || coins <= 0) return showToast("Masukkan jumlah koin!", "", "warning");
+
+    customBtn.classList.add("btn-loading");
+    try {
+      const { data: { session } } = await db.auth.getSession();
+      const response = await fetch("https://hqetnqnvmdxdgfnnluew.supabase.co/functions/v1/pay-coins", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({
+          userId: session.user.id,
+          email: session.user.email,
+          amount: coins * COIN_PRICE,
+          coins: coins,
+          item_name: `${coins} koin custom`,
+        }),
+      });
+
+      const result = await response.json();
+      if (result.token) {
+        window.snap.pay(result.token, {
+          onSuccess: () => location.reload()
+        });
+      }
+    } catch (err) {
+      showToast("Gagal", err.message, "error");
+    } finally {
+      customBtn.classList.remove("btn-loading");
+    }
+  });
+}
+
+// =======================
+// NOTIFICATION SYSTEM
 // =======================
 const notifBell = document.getElementById("notifBell");
 const notifCountEl = document.getElementById("notifCount");
@@ -804,278 +704,57 @@ let notifChannel = null;
 let currentUserId = null;
 let notificationsPaused = false;
 
-// ===== UPDATE BADGE =====
 function updateNotifBadge(count) {
   if (!notifCountEl) return;
   if (!count || count <= 0) {
     notifCountEl.style.display = "none";
-    notifCountEl.textContent = "0";
     return;
   }
   notifCountEl.style.display = "flex";
   notifCountEl.textContent = count > 99 ? "99+" : String(count);
-  notifCountEl.animate([
-    { transform: 'scale(1)' },
-    { transform: 'scale(1.3)' },
-    { transform: 'scale(1)' }
-  ], { duration: 300, easing: 'ease-out' });
 }
 
-// ===== LOAD UNREAD NOTIF =====
 async function loadUnreadNotifications() {
-  try {
-    const { data: { user }, error: userError } = await db.auth.getUser();
-    if (userError || !user) {
-      updateNotifBadge(0);
-      return;
-    }
-    currentUserId = user.id;
-    const { count, error } = await db
-      .from("notifications")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", user.id)
-      .eq("is_read", false);
-
-    if (error) throw error;
-    updateNotifBadge(count || 0);
-  } catch (err) {
-    console.error("loadUnreadNotifications error:", err);
-  }
-}
-
-// ===== LOAD NOTIF LIST =====
-async function loadNotificationList() {
-  if (!currentUserId) return;
-  if (!notifList) {
-    notifList = document.createElement("div");
-    notifList.id = "notificationList";
-    document.body.appendChild(notifList);
-  }
-
-  try {
-    const { data, error } = await db
-      .from("notifications")
-      .select("*")
-      .eq("user_id", currentUserId)
-      .order("created_at", { ascending: false })
-      .limit(20);
-
-    if (error) throw error;
-
-    const isDark = document.body.classList.contains("dark");
-    const headerBorder = isDark ? "#3f445e" : "#f0f0f0";
-    const titleColor = isDark ? "#ffffff" : "#1a1a1a";
-
-    notifList.innerHTML = `
-      <div style="padding:5px 5px 15px 5px; border-bottom:1px solid ${headerBorder}; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center;">
-        <h2 style="margin:0; font-size:18px; font-weight:800; color:${titleColor};">Notifikasi</h2>
-        <span style="background:#1DA1F2; color:white; padding:4px 10px; border-radius:20px; font-size:9px; font-weight:700;">HopeHype</span>
-      </div>
-      <ul id="notifItemsContainer" style="margin:0; padding:0; list-style:none;"></ul>
-    `;
-
-    const container = notifList.querySelector("#notifItemsContainer");
-    if (!data || data.length === 0) {
-      container.innerHTML = `<div style="text-align:center; padding:40px 10px; color:#bbb; font-size:13px;">Belum ada kabar terbaru... 🍃</div>`;
-      return;
-    }
-
-    data.forEach(n => {
-      const li = document.createElement("li");
-      const bgUnread = isDark ? "rgba(29,161,242,0.15)" : "rgba(29,161,242,0.05)";
-      const bgRead = isDark ? "#363b5e" : "#ffffff";
-      const borderColor = n.is_read ? (isDark ? "#444b75" : "#f0f0f0") : "rgba(29,161,242,0.2)";
-      const textColor = isDark ? "#eeeeee" : "#333333";
-
-      // Pilih Ikon & Warna berdasarkan tipe
-      let iconName = n.type === "like" ? "favorite" : n.type === "comment" ? "chat_bubble" : n.type === "follow" ? "person_add" : "notifications";
-      let iconColor = n.type === "like" ? "#FF3040" : n.type === "comment" ? "#00D084" : n.type === "follow" ? "#9b59b6" : "#1DA1F2";
-
-      Object.assign(li.style, {
-        padding: "14px", marginBottom: "10px", borderRadius: "18px", cursor: "pointer",
-        display: "flex", alignItems: "center", gap: "12px",
-        background: n.is_read ? bgRead : bgUnread,
-        border: "1px solid " + borderColor, transition: "all 0.2s ease"
-      });
-
-      li.innerHTML = `
-        <div style="background:${iconColor}20; width:38px; height:38px; border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-          <span class="material-icons" style="color:${iconColor}; font-size:18px;">${iconName}</span>
-        </div>
-        <div style="flex:1;">
-          <p style="margin:0; font-size:12px; color:${textColor}; line-height:1.4; font-weight:500;">
-            ${n.message}
-          </p>
-        </div>
-        ${!n.is_read ? '<div style="width:6px; height:6px; background:#1DA1F2; border-radius:50%;"></div>' : ''}
-      `;
-
-      // Logika Klik (Redirect ke Profil atau Post)
-      li.onclick = async () => {
-        try {
-          await db.from("notifications").update({ is_read: true }).eq("id", n.id);
-          
-          if (n.type === "follow") {
-            // Ambil username dari tabel profiles menggunakan ID yang ada di n.post_id
-            const { data: prof } = await db.from("profiles").select("username").eq("id", n.post_id).single();
-            if (prof && prof.username) {
-              window.location.href = `data.html?id=${prof.username}`;
-            } else {
-              console.error("Profil tidak ditemukan");
-            }
-          } else {
-            // Jika like/comment, pergi ke halaman post
-            window.location.href = "post.html?id=" + n.post_id;
-          }
-        } catch (e) {
-          console.error("Redirect error:", e);
-        }
-      };
-
-      container.appendChild(li);
-    }); // Tutup forEach
-  } catch (err) {
-    console.error("loadNotificationList error:", err);
-  }
-}
-
-// ===== SUBSCRIBE REALTIME =====
-async function subscribeNotifications() {
-  try {
-    const { data: { user } } = await db.auth.getUser();
-    if (!user) return;
-    currentUserId = user.id;
-
-    if (notifChannel) db.removeChannel(notifChannel);
-
-    notifChannel = db.channel("user-notifications")
-      .on("postgres_changes", {
-        event: "INSERT",
-        schema: "public",
-        table: "notifications",
-        filter: `user_id=eq.${user.id}`,
-      }, async (payload) => {
-        if (!notificationsPaused) {
-          await loadUnreadNotifications();
-          showToast("Notifikasi Baru", payload.new.message.replace(/<[^>]*>/g, ''), "info");
-        }
-      })
-      .on("postgres_changes", {
-        event: "INSERT",
-        schema: "public",
-        table: "followers", 
-        filter: `following_id=eq.${user.id}`, 
-      }, (payload) => {
-          loadUnreadNotifications();
-          showToast("Follower Baru! 👤", "Seseorang mulai mengikuti kamu.", "success");
-          createParticles(window.innerWidth / 2, 100); 
-      })
-      .subscribe();
-  } catch (err) { console.error("Sub error:", err); }
-}
-
-// ===== CLICK NOTIF BELL =====
-if (notifBell) {
-  notifBell.onclick = async (e) => {
-    e.stopPropagation();
-    notificationsPaused = true; 
-
-    if (notifCountEl) {
-      notifCountEl.style.display = "none";
-      notifCountEl.textContent = "0";
-    }
-
-    try {
-      await db.from("notifications")
-        .update({ is_read: true })
-        .eq("user_id", currentUserId)
-        .eq("is_read", false);
-    } catch (err) {
-      console.error("Gagal update permanen:", err);
-    }
-
-    await loadNotificationList();
-    
-    setTimeout(() => { notificationsPaused = false; }, 2000);
-
-    let overlay = document.getElementById("notifOverlay");
-    if (!overlay) {
-      overlay = document.createElement("div");
-      overlay.id = "notifOverlay";
-      document.body.appendChild(overlay);
-    }
-
-    Object.assign(overlay.style, {
-      display: "block", position: "fixed", top: "0", left: "0", width: "100vw", height: "100vh",
-      background: "rgba(0,0,0,0.5)", backdropFilter: "blur(6px)", zIndex: "10000", opacity: "0", transition: "opacity 0.3s ease"
-    });
-    overlay.onclick = closeNotif;
-
-    Object.assign(notifList.style, {
-      display: "flex", flexDirection: "column", position: "fixed", top: "50%", left: "50%",
-      transform: "translate(-50%, -50%)", width: "88vw", maxWidth: "380px", maxHeight: "75vh",
-      background: document.body.classList.contains("dark") ? "#2b3050" : "#ffffff",
-      zIndex: "10001", borderRadius: "28px", boxShadow: "0 20px 60px rgba(0,0,0,0.4)",
-      padding: "20px", overflowY: "auto", opacity: "0", transition: "opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
-    });
-
-    requestAnimationFrame(() => {
-      overlay.style.opacity = "1";
-      notifList.style.opacity = "1";
-    });
-  };
-}
-
-function closeNotif() {
-  const overlay = document.getElementById("notifOverlay");
-  if (notifList) notifList.style.opacity = "0";
-  if (overlay) overlay.style.opacity = "0";
-  setTimeout(() => {
-    if (notifList) notifList.style.display = "none";
-    if (overlay) overlay.remove();
-  }, 300);
+  const { data: { user } } = await db.auth.getUser();
+  if (!user) return;
+  currentUserId = user.id;
+  const { count } = await db
+    .from("notifications")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .eq("is_read", false);
+  updateNotifBadge(count || 0);
 }
 
 // =======================
-// PARTICLES
+// PARTICLES EFFECT
 // =======================
 function createParticles(x, y) {
   const colors = ["#f09f33", "#00d2ff", "#4ade80", "#ff758c", "#ffffff"];
-
   for (let i = 0; i < 15; i++) {
     const p = document.createElement("div");
-    p.className = "particle";
-
-    const size = Math.random() * 8 + 4;
-    p.style.width = `${size}px`;
-    p.style.height = `${size}px`;
-    p.style.background = colors[Math.floor(Math.random() * colors.length)];
-    p.style.left = `${x}px`;
-    p.style.top = `${y}px`;
-    p.style.position = "fixed";
-    p.style.pointerEvents = "none";
-    p.style.borderRadius = "50%";
-    p.style.zIndex = "10001";
-
+    p.style.cssText = `width:6px; height:6px; background:${colors[Math.floor(Math.random()*5)]}; left:${x}px; top:${y}px; position:fixed; pointer-events:none; border-radius:50%; z-index:10001;`;
     document.body.appendChild(p);
 
     const angle = Math.random() * Math.PI * 2;
     const velocity = Math.random() * 100 + 50;
-    const destinationX = Math.cos(angle) * velocity;
-    const destinationY = Math.sin(angle) * velocity;
-
-    p.animate(
-      [
-        { transform: "translate(0, 0) scale(1)", opacity: 1 },
-        { transform: `translate(${destinationX}px, ${destinationY}px) scale(0)`, opacity: 0 },
-      ],
-      {
-        duration: 600 + Math.random() * 400,
-        easing: "cubic-bezier(0, .9, .57, 1)",
-        fill: "forwards",
-      }
-    );
+    p.animate([
+      { transform: "translate(0, 0) scale(1)", opacity: 1 },
+      { transform: `translate(${Math.cos(angle)*velocity}px, ${Math.sin(angle)*velocity}px) scale(0)`, opacity: 0 }
+    ], { duration: 800, easing: "cubic-bezier(0, .9, .57, 1)", fill: "forwards" });
 
     setTimeout(() => p.remove(), 1000);
   }
 }
+
+// =======================
+// APP INIT
+// =======================
+const initApp = async () => {
+  await updateAuthMenu();
+  await loadUser();
+  await loadUnreadNotifications();
+  await checkPopup();
+};
+
+initApp();

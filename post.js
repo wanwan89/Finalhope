@@ -12,6 +12,15 @@ let currentPostId = null;
 let replyTo = null;
 let replyToUsername = null;
 
+// GIFT STATE
+let giftState = {
+  postId: null,
+  creatorId: null,
+  creatorName: "",
+  userCoins: 0,
+  selectedAmount: 0,
+};
+
 // =======================
 // CREATE NOTIFICATION
 // =======================
@@ -56,53 +65,72 @@ async function createNotification({ user_id, actor_id, post_id, type, message })
   }
 }
 
-// =======================
-// DOM READY
-// =======================
-document.addEventListener("DOMContentLoaded", async () => {
-  await getUser();
-  fetchPosts("all");
-  initSearch();
-  initReplyClick();
-  initAuth();
-  initRealtime();
-  initCloseButtons();
+document.addEventListener("DOMContentLoaded", () => {
+  // JANGAN pakai 'async' di callback DOMContentLoaded langsung.
+  // Kita buat fungsi jalannya sendiri biar bisa kita kontrol urutannya.
 
+  const startApp = async () => {
+    try {
+      console.log("🛠 Memulai Aplikasi...");
+
+      // 1. AMBIL USER DULU (Tunggu sampai selesai & Lock dilepas)
+      // Ini wajib ditunggu (await) supaya tokennya stabil dulu.
+      await getUser();
+      console.log("✅ Auth Lock Released.");
+
+      // 2. BARU TARIK POSTINGAN
+      // Sekarang fetchPosts gak bakal rebutan lock lagi sama getUser.
+      await fetchPosts("all");
+      console.log("✅ Posts Loaded.");
+
+    } catch (err) {
+      console.error("❌ Startup Error:", err.message);
+      // Kalau Auth gagal, tetep paksa tarik post buat tamu (Guest Mode)
+      fetchPosts("all");
+    }
+
+    // 3. INIT FITUR LAINNYA
+    const safeInit = (name, fn) => {
+      try { if (typeof fn === "function") fn(); } 
+      catch (e) { console.warn(`Gagal init ${name}`); }
+    };
+
+    safeInit("Search", initSearch);
+    safeInit("ReplyClick", initReplyClick);
+    safeInit("Auth", initAuth);
+    safeInit("Realtime", initRealtime);
+    safeInit("CloseButtons", initCloseButtons);
+    if (typeof initGiftSheet === "function") safeInit("GiftSheet", initGiftSheet);
+  };
+
+  // Jalankan fungsi utama
+  startApp();
+
+  // --- LOGIKA SIDEBAR (Taruh di luar startApp biar menu cepet respon) ---
   const navItems = document.querySelectorAll(".nav-item");
   const sidebar = document.querySelector(".sidebar");
   const menuBtn = document.getElementById("mobileMenuBtn");
 
-  // default active kategori all
   navItems.forEach((nav) => {
-    if (nav.getAttribute("data-category") === "all") {
-      nav.classList.add("active");
-    } else {
-      nav.classList.remove("active");
-    }
+    if (nav.getAttribute("data-category") === "all") nav.classList.add("active");
   });
 
-  // klik kategori
   navItems.forEach((item) => {
-    item.addEventListener("click", function (e) {
-      if (this.id === "adminPanelBtn") return;
+    item.addEventListener("click", (e) => {
+      if (item.id === "adminPanelBtn") return;
       e.preventDefault();
-
-      navItems.forEach((nav) => nav.classList.remove("active"));
-      this.classList.add("active");
-
-      fetchPosts(this.getAttribute("data-category"));
-
+      navItems.forEach((n) => n.classList.remove("active"));
+      item.classList.add("active");
+      fetchPosts(item.getAttribute("data-category"));
       if (sidebar) sidebar.classList.remove("active");
     });
   });
 
-  // sidebar mobile
   if (menuBtn && sidebar) {
     menuBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       sidebar.classList.toggle("active");
     });
-
     document.addEventListener("click", (e) => {
       if (!sidebar.contains(e.target) && !menuBtn.contains(e.target)) {
         sidebar.classList.remove("active");
@@ -180,40 +208,232 @@ async function fetchPosts(category = "all") {
           </div>
 
           <div class="actions">
-            <a href="linda.html?id=${post.creator_id}" class="primary">Detail</a>
+  <a href="linda.html?id=${post.creator_id}" class="primary">Detail</a>
 
-            <div class="engagement-group">
-              <button class="icon-btn like-btn" data-post="${post.id}">
-                <svg viewBox="0 0 24 24" class="icon heart">
-                  <path d="M12.1 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3 9.24 3 10.91 3.81 12 5.09 13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5 22 12.28 18.6 15.36 13.55 20.04z"/>
-                </svg>
-                <span class="like-count">0</span>
-              </button>
+  <div class="engagement-group">
+   <button class="icon-btn gift-btn" 
+  data-post="${post.id}" 
+  data-creator="${post.creator_id}"
+  data-name="${post.name || post.creator_id}">
+      <svg viewBox="0 0 24 24" class="icon gift-icon">
+        <path d="M20 7h-2.18A3 3 0 0 0 12 3a3 3 0 0 0-5.82 4H4a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h1v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8h1a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1Zm-8-2a1 1 0 0 1 1 1v1h-2V6a1 1 0 0 1 1-1Zm-4 1a1 1 0 0 1 2 0v1H8a1 1 0 0 1 0-2Zm9 13h-4v-7h4Zm-6 0H7v-7h4Zm8-9H5V9h14Z"/>
+      </svg>
+      <span class="gift-label"></span>
+    </button>
 
-              <button class="icon-btn comment-toggle" data-post="${post.id}">
-                <svg viewBox="0 0 24 24" class="icon comment-icon">
-                  <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/>
-                </svg>
-                <span class="comment-count">0</span>
-              </button>
-            </div>
-          </div>
-        </div>
+    <button class="icon-btn like-btn" data-post="${post.id}">
+      <svg viewBox="0 0 24 24" class="icon heart">
+        <path d="M12.1 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3 9.24 3 10.91 3.81 12 5.09 13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5 22 12.28 18.6 15.36 13.55 20.04z"/>
+      </svg>
+      <span class="like-count">0</span>
+    </button>
+
+    <button class="icon-btn comment-toggle" data-post="${post.id}">
+      <svg viewBox="0 0 24 24" class="icon comment-icon">
+        <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/>
+      </svg>
+      <span class="comment-count">0</span>
+    </button>
+  </div>
+</div>
       `;
 
       gallery.appendChild(card);
     });
 
-    initLikeButtons();
-    initComments();
-    loadLikes();
-    loadCommentCounts();
+    initGiftButtons();
+initLikeButtons();
+initComments();
+loadLikes();
+loadCommentCounts();
   } catch (err) {
     console.error("Gagal memuat data:", err.message);
     gallery.innerHTML =
       '<p style="color:red; text-align:center; grid-column:1/-1; padding:50px;">Gagal memuat postingan.</p>';
   }
 }
+// =======================
+// GIFT SYSTEM
+// =======================
+function initGiftButtons() {
+  document.querySelectorAll(".gift-btn").forEach((btn) => {
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+
+    newBtn.addEventListener("click", async () => {
+      const { data: { user: authUser } } = await supabaseClient.auth.getUser();
+
+      if (!authUser) {
+        openLogin();
+        return;
+      }
+
+      const postId = newBtn.dataset.post;
+      const creatorId = newBtn.dataset.creator;
+      const creatorName = newBtn.dataset.name || "Creator";
+
+      if (authUser.id === creatorId) {
+        alert("Kamu tidak bisa gift ke postingan sendiri 😅");
+        return;
+      }
+
+      const { data: senderProfile, error: senderError } = await supabaseClient
+        .from("profiles")
+        .select("id, coins, username")
+        .eq("id", authUser.id)
+        .maybeSingle();
+
+      if (senderError || !senderProfile) {
+        console.error("Sender profile error:", senderError);
+        alert("Gagal membaca data coin kamu.");
+        return;
+      }
+
+      const currentCoin = senderProfile.coins || 0;
+
+      openGiftSheet({
+        postId,
+        creatorId,
+        creatorName,
+        userCoins: currentCoin,
+      });
+    });
+  });
+}
+async function processGiftTransaction() {
+  const sendBtn = document.getElementById("sendGiftBtn");
+  const amount = parseInt(giftState.selectedAmount) || 0;
+
+  if (!sendBtn) return;
+  if (amount <= 0) { alert("Pilih jumlah coin dulu."); return; }
+  if (amount > giftState.userCoins) { alert("Coin kamu tidak cukup 😢"); return; }
+
+  sendBtn.disabled = true;
+  sendBtn.textContent = "Mengirim...";
+
+  try {
+    const { data: { user: authUser } } = await supabaseClient.auth.getUser();
+    if (!authUser) { openLogin(); return; }
+
+    // --- BAGIAN SAKTI (RPC) ---
+    // Memanggil fungsi transfer_coins yang kamu buat di SQL Editor Supabase
+    const { error: transferError } = await supabaseClient.rpc('transfer_coins', {
+      sender_id: authUser.id,
+      receiver_id: giftState.creatorId,
+      amount: amount
+    });
+
+    if (transferError) {
+      // Kalau koin gak cukup atau RLS bermasalah, dia bakal berhenti di sini
+      throw new Error(transferError.message);
+    }
+
+    // --- CATAT RIWAYAT ---
+    await supabaseClient.from("gift_transactions").insert({
+      sender_id: authUser.id,
+      receiver_id: giftState.creatorId,
+      post_id: parseInt(giftState.postId),
+      amount: amount
+    });
+
+    // --- SELESAI & EFEK ---
+    
+    // Jalankan Animasi Cinematic yang meriah tadi
+    triggerGiftAnimation();
+
+    // Ambil username lo buat notifikasi
+    const { data: senderProfile } = await supabaseClient
+      .from("profiles")
+      .select("username")
+      .eq("id", authUser.id)
+      .single();
+
+    // Kirim Notifikasi
+    await createNotification({
+      user_id: giftState.creatorId,
+      actor_id: authUser.id,
+      post_id: giftState.postId,
+      type: "gift",
+      message: `${senderProfile?.username || "Seseorang"} mengirim ${amount} coin ke postingan Anda`,
+    });
+
+    // Update state koin di layar biar langsung berkurang
+    giftState.userCoins = giftState.userCoins - amount;
+    
+    closeGiftSheet();
+
+    if (typeof loadUserProfile === "function") await loadUserProfile();
+
+  } catch (err) {
+    console.error("Gift error:", err.message);
+    alert(err.message || "Terjadi kesalahan saat memproses transfer.");
+  } finally {
+    sendBtn.disabled = false;
+    sendBtn.textContent = "Kirim Gift";
+  }
+}
+
+// =======================
+// GIFT SYSTEM
+// =======================
+
+// Fungsi buat buka sheet (dipanggil dari tombol Gift di postingan)
+function openGiftSheet({ postId, creatorId, creatorName, userCoins }) {
+  const sheet = document.getElementById("giftSheet");
+  if (!sheet) return;
+
+  // Simpan data ke variabel global giftState
+  giftState.postId = postId;
+  giftState.creatorId = creatorId;
+  giftState.creatorName = creatorName;
+  giftState.userCoins = userCoins;
+  giftState.selectedAmount = 0; // Reset pilihan
+
+  // Update tampilan koin di sheet
+  const userCoinsEl = document.getElementById("giftUserCoins");
+  if (userCoinsEl) userCoinsEl.textContent = userCoins;
+
+  // Reset tampilan tombol & pilihan item
+  const sendBtn = document.getElementById("sendGiftBtn");
+  if (sendBtn) {
+    sendBtn.disabled = true;
+    sendBtn.textContent = "Kirim";
+  }
+  document.querySelectorAll(".gift-item").forEach(i => i.classList.remove("active"));
+
+  // Tampilkan sheet
+  sheet.classList.add("active");
+  document.body.style.overflow = "hidden"; 
+}
+
+// Fungsi buat pilih hadiah (DIPANGGIL DARI ONCLICK DI HTML)
+function selectGift(element, amount) {
+  // Hapus class active dari semua item
+  document.querySelectorAll('.gift-item').forEach(item => item.classList.remove('active'));
+  
+  // Tambah class active ke yang diklik
+  element.classList.add('active');
+  
+  // Update state jumlah koin yang dipilih
+  giftState.selectedAmount = amount;
+  
+  // Aktifkan tombol kirim
+  const sendBtn = document.getElementById("sendGiftBtn");
+  if (sendBtn) {
+    sendBtn.disabled = false;
+    sendBtn.textContent = `Kirim (${amount})`;
+  }
+}
+
+function closeGiftSheet() {
+  const sheet = document.getElementById("giftSheet");
+  if (sheet) {
+    sheet.classList.remove("active");
+    document.body.style.overflow = ""; 
+  }
+}
+
+
 
 // =======================
 // COMMENTS & REPLY SYSTEM
@@ -224,7 +444,7 @@ function initComments() {
 
   const list = modal.querySelector(".comment-list");
   const input = modal.querySelector(".comment-input");
-
+  if (!list || !input) return;
   document.querySelectorAll(".comment-toggle").forEach((btn) => {
     const newBtn = btn.cloneNode(true);
     btn.parentNode.replaceChild(newBtn, btn);
@@ -666,11 +886,11 @@ function initCloseButtons() {
   });
 
   commentModal?.addEventListener("click", (e) => {
-    if (!commentBox.contains(e.target)) {
-      commentModal.classList.remove("active");
-      resetReplyState();
-    }
-  });
+  if (commentBox && !commentBox.contains(e.target)) {
+    commentModal.classList.remove("active");
+    resetReplyState();
+  }
+});
 
   document.querySelector(".close-login")?.addEventListener("click", () => {
     const loginPopup = document.getElementById("loginPopup");
@@ -724,4 +944,44 @@ function initRealtime() {
       }
     )
     .subscribe();
+}
+function triggerGiftAnimation() {
+  const popup = document.getElementById("giftSuccessPopup");
+  if (!popup) return;
+
+  popup.style.display = "flex";
+
+  // Meledakkan Confetti tepat dari tengah layar
+  const end = Date.now() + 1000;
+  const colors = ['#ffffff', '#FFD700', '#fff9c4', '#F0F0F0'];
+
+  (function frame() {
+    confetti({
+      particleCount: 15,
+      angle: 60,
+      spread: 70,
+      origin: { x: 0.5, y: 0.5 }, // MELEDAK DARI TENGAH
+      colors: colors,
+      startVelocity: 60,
+      gravity: 0.5
+    });
+    confetti({
+      particleCount: 15,
+      angle: 120,
+      spread: 70,
+      origin: { x: 0.5, y: 0.5 },
+      colors: colors,
+      startVelocity: 60,
+      gravity: 0.5
+    });
+
+    if (Date.now() < end) {
+      requestAnimationFrame(frame);
+    }
+  }());
+
+  // Tutup container setelah selesai
+  setTimeout(() => {
+    popup.style.display = "none";
+  }, 2500);
 }
