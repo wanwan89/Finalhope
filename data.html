@@ -184,13 +184,6 @@
         padding: 25px; 
         box-shadow: 0 10px 30px rgba(0,0,0,0.1);
     }
-    /* Badge Dev Biru-Putih */
-    #badge-container span {
-        background: var(--light-blue-bg) !important;
-        color: var(--primary-blue) !important;
-        border: 1px solid rgba(0,123,255,0.2);
-    }
-/* --- CSS KHUSUS MODAL BIO --- */
 #bio-modal { 
     display: none; 
     position: fixed; 
@@ -521,13 +514,26 @@
     // Kita samakan namanya menjadi userParam agar cocok dengan fungsi di bawah
     const userParam = urlParams.get('id'); 
 
-    function getUserBadge(role) {
-        if(!role) return "";
-        let b = "";
-        if(role.includes("admin")) b += `<span style="background:#ff4757;color:white;padding:2px 6px;border-radius:4px;font-size:9px;margin-left:4px;font-weight:bold;">🛡 Dev</span>`;
-        if(role.includes("verified")) b += `<span style="margin-left:4px;"><svg width="14" height="14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#1DA1F2"/><path d="M7 12.5l3 3 7-7" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
-        return b;
+function getUserBadge(role) {
+    if(!role) return "";
+    let b = "";
+    
+    // Badge Dev (Merah Solid biar Kontras)
+    if(role.includes("admin")) {
+        b += `<span style="background:#ff4757; color:white; padding:2px 6px; border-radius:4px; font-size:10px; margin-left:4px; font-weight:bold; display:inline-flex; align-items:center; vertical-align:middle; line-height:1;">🛡 Dev</span>`;
     }
+    
+    // Badge Verified (Hanya Ikon, Tanpa Background Kotak)
+    if(role.includes("verified")) {
+        b += `<span style="margin-left:4px; display:inline-flex; align-items:center; vertical-align:middle;">
+                <svg width="15" height="15" viewBox="0 0 24 24" style="display:block;">
+                    <circle cx="12" cy="12" r="10" fill="#1DA1F2"/>
+                    <path d="M7 12.5l3 3 7-7" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>`;
+    }
+    return b;
+}
 
     async function loadProfile() {
         try {

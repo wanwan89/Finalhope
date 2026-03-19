@@ -869,7 +869,7 @@ async function loadNotificationList() {
     notifList.innerHTML = `
       <div style="padding:5px 5px 15px 5px; border-bottom:1px solid ${headerBorder}; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center;">
         <h2 style="margin:0; font-size:18px; font-weight:800; color:${titleColor};">Notifikasi</h2>
-        <span style="background:#1DA1F2; color:white; padding:4px 10px; border-radius:20px; font-size:9px; font-weight:700;">Hopers</span>
+        <span style="background:#1DA1F2; color:white; padding:4px 10px; border-radius:20px; font-size:9px; font-weight:700;">HopeHype</span>
       </div>
       <ul id="notifItemsContainer" style="margin:0; padding:0; list-style:none;"></ul>
     `;
@@ -887,6 +887,10 @@ async function loadNotificationList() {
       const borderColor = n.is_read ? (isDark ? "#444b75" : "#f0f0f0") : "rgba(29,161,242,0.2)";
       const textColor = isDark ? "#eeeeee" : "#333333";
 
+      // Pilih Ikon & Warna berdasarkan tipe
+      let iconName = n.type === "like" ? "favorite" : n.type === "comment" ? "chat_bubble" : n.type === "follow" ? "person_add" : "notifications";
+      let iconColor = n.type === "like" ? "#FF3040" : n.type === "comment" ? "#00D084" : n.type === "follow" ? "#9b59b6" : "#1DA1F2";
+
       Object.assign(li.style, {
         padding: "14px", marginBottom: "10px", borderRadius: "18px", cursor: "pointer",
         display: "flex", alignItems: "center", gap: "12px",
@@ -894,51 +898,57 @@ async function loadNotificationList() {
         border: "1px solid " + borderColor, transition: "all 0.2s ease"
       });
 
-      let iconName = n.type === "like" ? "favorite" : n.type === "comment" ? "chat_bubble" : "notifications";
-      let iconColor = n.type === "like" ? "#FF3040" : n.type === "comment" ? "#00D084" : "#1DA1F2";
-
       li.innerHTML = `
         <div style="background:${iconColor}20; width:38px; height:38px; border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
           <span class="material-icons" style="color:${iconColor}; font-size:18px;">${iconName}</span>
         </div>
         <div style="flex:1;">
           <p style="margin:0; font-size:12px; color:${textColor}; line-height:1.4; font-weight:500;">
-            <strong style="color:#1DA1F2;">Seseorang</strong> ${n.message}
+            ${n.message}
           </p>
         </div>
         ${!n.is_read ? '<div style="width:6px; height:6px; background:#1DA1F2; border-radius:50%;"></div>' : ''}
       `;
 
+      // Logika Klik (Redirect ke Profil atau Post)
       li.onclick = async () => {
         try {
           await db.from("notifications").update({ is_read: true }).eq("id", n.id);
-          window.location.href = "post.html?id=" + n.post_id;
+          
+          if (n.type === "follow") {
+            // Ambil username dari tabel profiles menggunakan ID yang ada di n.post_id
+            const { data: prof } = await db.from("profiles").select("username").eq("id", n.post_id).single();
+            if (prof && prof.username) {
+              window.location.href = `data.html?id=${prof.username}`;
+            } else {
+              console.error("Profil tidak ditemukan");
+            }
+          } else {
+            // Jika like/comment, pergi ke halaman post
+            window.location.href = "post.html?id=" + n.post_id;
+          }
         } catch (e) {
           console.error("Redirect error:", e);
         }
       };
+
       container.appendChild(li);
-    });
+    }); // Tutup forEach
   } catch (err) {
     console.error("loadNotificationList error:", err);
   }
 }
 
 // ===== SUBSCRIBE REALTIME =====
-// Ganti fungsi subscribeNotifications lama dengan ini:
 async function subscribeNotifications() {
   try {
-    const { data: { user }, error: userError } = await db.auth.getUser();
-    if (userError || !user) return;
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return;
     currentUserId = user.id;
 
-    if (notifChannel) {
-      db.removeChannel(notifChannel);
-      notifChannel = null;
-    }
+    if (notifChannel) db.removeChannel(notifChannel);
 
     notifChannel = db.channel("user-notifications")
-      // --- LISTEN UNTUK TABEL NOTIFICATIONS (Like/Comment) ---
       .on("postgres_changes", {
         event: "INSERT",
         schema: "public",
@@ -947,31 +957,21 @@ async function subscribeNotifications() {
       }, async (payload) => {
         if (!notificationsPaused) {
           await loadUnreadNotifications();
-          const row = payload.new;
-          let msg = "Kamu punya notifikasi baru";
-          if (row?.type === "like") msg = "Seseorang menyukai postinganmu";
-          else if (row?.type === "comment") msg = "Seseorang mengomentari postinganmu";
-          showToast("Notifikasi", msg, "info");
+          showToast("Notifikasi Baru", payload.new.message.replace(/<[^>]*>/g, ''), "info");
         }
       })
-      // --- TAMBAHAN: LISTEN UNTUK FOLLOW BARU ---
       .on("postgres_changes", {
         event: "INSERT",
         schema: "public",
-        table: "followers", // Mendengarkan tabel followers
-        filter: `following_id=eq.${user.id}`, // Jika ID yang diikuti adalah SAYA
-      }, async (payload) => {
-          // Ambil nama follower dari tabel profiles (opsional, atau pakai pesan umum)
-          await loadUnreadNotifications(); 
+        table: "followers", 
+        filter: `following_id=eq.${user.id}`, 
+      }, (payload) => {
+          loadUnreadNotifications();
           showToast("Follower Baru! 👤", "Seseorang mulai mengikuti kamu.", "success");
-          
-          // Efek partikel biar seru saat ada yang follow
           createParticles(window.innerWidth / 2, 100); 
       })
       .subscribe();
-  } catch (err) {
-    console.error("subscribeNotifications error:", err);
-  }
+  } catch (err) { console.error("Sub error:", err); }
 }
 
 // ===== CLICK NOTIF BELL =====
