@@ -701,7 +701,8 @@ const initApp = async () => {
 };
 
 initApp();
-
+ 
+ 
 // ==========================================
 // LOGIKA BELI DENGAN EFEK PARTIKEL & LOADING
 // ==========================================
@@ -868,7 +869,7 @@ async function loadNotificationList() {
     notifList.innerHTML = `
       <div style="padding:5px 5px 15px 5px; border-bottom:1px solid ${headerBorder}; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center;">
         <h2 style="margin:0; font-size:18px; font-weight:800; color:${titleColor};">Notifikasi</h2>
-        <span style="background:#1DA1F2; color:white; padding:4px 10px; border-radius:20px; font-size:9px; font-weight:700;">LIVE</span>
+        <span style="background:#1DA1F2; color:white; padding:4px 10px; border-radius:20px; font-size:9px; font-weight:700;">Hopers</span>
       </div>
       <ul id="notifItemsContainer" style="margin:0; padding:0; list-style:none;"></ul>
     `;
@@ -924,6 +925,7 @@ async function loadNotificationList() {
 }
 
 // ===== SUBSCRIBE REALTIME =====
+// Ganti fungsi subscribeNotifications lama dengan ini:
 async function subscribeNotifications() {
   try {
     const { data: { user }, error: userError } = await db.auth.getUser();
@@ -936,6 +938,7 @@ async function subscribeNotifications() {
     }
 
     notifChannel = db.channel("user-notifications")
+      // --- LISTEN UNTUK TABEL NOTIFICATIONS (Like/Comment) ---
       .on("postgres_changes", {
         event: "INSERT",
         schema: "public",
@@ -950,6 +953,20 @@ async function subscribeNotifications() {
           else if (row?.type === "comment") msg = "Seseorang mengomentari postinganmu";
           showToast("Notifikasi", msg, "info");
         }
+      })
+      // --- TAMBAHAN: LISTEN UNTUK FOLLOW BARU ---
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "followers", // Mendengarkan tabel followers
+        filter: `following_id=eq.${user.id}`, // Jika ID yang diikuti adalah SAYA
+      }, async (payload) => {
+          // Ambil nama follower dari tabel profiles (opsional, atau pakai pesan umum)
+          await loadUnreadNotifications(); 
+          showToast("Follower Baru! 👤", "Seseorang mulai mengikuti kamu.", "success");
+          
+          // Efek partikel biar seru saat ada yang follow
+          createParticles(window.innerWidth / 2, 100); 
       })
       .subscribe();
   } catch (err) {
