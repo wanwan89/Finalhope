@@ -743,91 +743,70 @@ function initRealtimeMessages() {
     messageChannel = null;
   }
 
+  // 1. HAPUS filter room_id di level channel agar bisa mendengar pesan masuk dari room mana saja
   messageChannel = supabase
-    .channel(`messages-${currentRoomId}`)
+    .channel(`messages-global-monitor`) 
     .on(
       'postgres_changes',
       {
         event: 'INSERT',
         schema: 'public',
-        table: 'messages',
-        filter: `room_id=eq.${currentRoomId}`
+        table: 'messages'
+        // 💡 FILTER DIHAPUS agar sidebar bisa update untuk semua room
       },
       async (payload) => {
         const newMsg = payload.new;
 
-        if (newMsg.room_id !== currentRoomId) return;
+        // 2. UPDATE SIDEBAR (Realtime Update)
+        // Panggil ini setiap ada pesan baru agar daftar chat di sidebar langsung sinkron
+        loadChatHistory();
 
-        // ===== Pesan dari diri sendiri =====
-        if (newMsg.user_id === currentUser.id) {
-          const existingEl = document.getElementById(`msg-${newMsg.id}`);
-          if (existingEl) {
-            setTimeout(() => loadChatHistory(), 150);
-            return;
-          }
+        // 3. LOGIKA TAMPILAN CHAT (Hanya jika sedang membuka room yang sama)
+        if (newMsg.room_id === currentRoomId) {
+          
+          // Cegah double bubble (jika elemen sudah ada di layar, jangan render lagi)
+          if (document.getElementById(`msg-${newMsg.id}`)) return;
 
-          const tempEl = document.querySelector(`[id^="msg-temp-"]`);
-          if (tempEl) {
-            tempEl.id = `msg-${newMsg.id}`;
-            updateMessageStatusUI(newMsg.id, 'sent');
-          } else {
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("username, avatar_url, role")
-              .eq("id", newMsg.user_id)
+          // ===== Pesan dari diri sendiri =====
+          if (newMsg.user_id === currentUser.id) {
+            const tempEl = document.querySelector(`[id^="msg-temp-"]`);
+            if (tempEl) {
+              tempEl.id = `msg-${newMsg.id}`;
+              updateMessageStatusUI(newMsg.id, 'sent');
+            } else {
+              // Jika data profil belum ada di newMsg, render manual
+              renderMessage(newMsg);
+            }
+          } 
+          // ===== Pesan dari orang lain =====
+          else {
+            const { data: fullMsg } = await supabase
+              .from("messages")
+              .select(`
+                *,
+                reply_to_msg:reply_to(id, username, message),
+                profiles:profiles!messages_user_id_fkey(username, avatar_url, role)
+              `)
+              .eq("id", newMsg.id)
               .single();
 
-            newMsg.profiles = profile || {
-              username: newMsg.username || "User",
-              avatar_url: newMsg.avatar || "profile.png",
-              role: newMsg.role || "user"
-            };
-
-            renderMessage(newMsg);
-            scrollToBottom();
+            renderMessage(fullMsg || newMsg);
+            receiveSound.play().catch(() => {});
+            
+            // Auto read
+            try {
+              await supabase
+                .from("messages")
+                .update({ status: document.hidden ? 'delivered' : 'read' })
+                .eq("id", newMsg.id)
+                .neq("user_id", currentUser.id);
+            } catch (e) {
+              console.warn("Gagal update status:", e);
+            }
           }
-
-          setTimeout(() => loadChatHistory(), 150);
-          return;
+          scrollToBottom();
+          updateHeaderStatus();
         }
-
-        // ===== Pesan dari orang lain =====
-        const { data: fullMsg } = await supabase
-          .from("messages")
-          .select(`
-            *,
-            reply_to_msg:reply_to(id, username, message),
-            profiles:profiles!messages_user_id_fkey(username, avatar_url, role)
-          `)
-          .eq("id", newMsg.id)
-          .single();
-
-        const incomingMsg = fullMsg || {
-          ...newMsg,
-          profiles: {
-            username: newMsg.username || "User",
-            avatar_url: newMsg.avatar || "profile.png",
-            role: newMsg.role || "user"
-          }
-        };
-
-        renderMessage(incomingMsg);
-        scrollToBottom();
-        receiveSound.play().catch(() => {});
-
-        // Auto delivered/read
-        try {
-          await supabase
-            .from("messages")
-            .update({ status: document.hidden ? 'delivered' : 'read' })
-            .eq("id", newMsg.id)
-            .neq("user_id", currentUser.id);
-        } catch (e) {
-          console.warn("Gagal update status:", e);
-        }
-
-        setTimeout(() => loadChatHistory(), 150);
-        updateHeaderStatus();
       }
     )
     .on(
@@ -835,25 +814,24 @@ function initRealtimeMessages() {
       {
         event: 'UPDATE',
         schema: 'public',
-        table: 'messages',
-        filter: `room_id=eq.${currentRoomId}`
+        table: 'messages'
+        // 💡 Update status centang juga bisa didengar secara global
       },
       async (payload) => {
         const updated = payload.new;
-        updateMessageStatusUI(updated.id, updated.status || 'sent');
+        if (updated.room_id === currentRoomId && updated.user_id === currentUser.id) {
+          updateMessageStatusUI(updated.id, updated.status || 'sent');
+        }
       }
     )
     .subscribe((status) => {
-      console.log("Realtime status:", status, "Room:", currentRoomId);
-
+      console.log("Realtime status:", status);
       if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-        console.warn("Realtime putus, reconnecting...");
-        setTimeout(() => {
-          if (currentUser) initRealtimeMessages();
-        }, 1500);
+        setTimeout(() => { if (currentUser) initRealtimeMessages(); }, 1500);
       }
     });
 }
+
 // ===== Sidebar Toggle =====
 if (hamburger) {
   hamburger.addEventListener('click', () => {
@@ -927,17 +905,15 @@ function renderGlobalChatItem(container) {
   container.appendChild(globalBtn);
 }
 
-// ===== Load Chat History =====
+// ===== Load Chat History (Versi Premium) =====
 async function loadChatHistory() {
   const list = document.getElementById("private-chat-list");
   if (!list || !currentUser) return;
 
-  list.innerHTML = "";
-  renderGlobalChatItem(list);
-
+  // 1. Ambil data pesan terbaru + status untuk badge unread
   const { data: messages, error } = await supabase
     .from("messages")
-    .select("room_id, message, created_at, sticker_url")
+    .select("room_id, message, created_at, sticker_url, user_id, status")
     .neq("room_id", "room-1")
     .ilike("room_id", `%${currentUser.id}%`)
     .order("created_at", { ascending: false });
@@ -947,45 +923,78 @@ async function loadChatHistory() {
     return;
   }
 
-  if (!messages || messages.length === 0) return;
+  // 2. Map untuk pesan terakhir & hitung unread per room
+  const lastMessagesMap = new Map();
+  const unreadCountMap = new Map();
 
-  const shownRooms = new Set();
+  messages.forEach(msg => {
+    // Simpan pesan paling baru saja
+    if (!lastMessagesMap.has(msg.room_id)) {
+      lastMessagesMap.set(msg.room_id, msg);
+    }
+    // Hitung pesan yang belum dibaca (dikirim orang lain & status bukan read)
+    if (msg.user_id !== currentUser.id && msg.status !== 'read') {
+      const currentCount = unreadCountMap.get(msg.room_id) || 0;
+      unreadCountMap.set(msg.room_id, currentCount + 1);
+    }
+  });
 
-  for (const chat of messages) {
-    if (shownRooms.has(chat.room_id)) continue;
-    shownRooms.add(chat.room_id);
+  // 3. Reset UI Sidebar
+  list.innerHTML = "";
+  renderGlobalChatItem(list); // Tetap munculkan Chat Global di paling atas
 
-    const participants = chat.room_id.replace("pv_", "").split("_");
-    const partnerId = participants.find(id => id !== currentUser.id);
+  // 4. Looping untuk membuat item chat
+  for (const [roomId, chat] of lastMessagesMap) {
+    const partnerId = roomId.replace("pv_", "").split("_").find(id => id !== currentUser.id);
     if (!partnerId) continue;
 
+    // Ambil data partner (Username, Avatar, Role)
     const { data: partner } = await supabase
       .from("profiles")
-      .select("username, avatar_url, short_id")
+      .select("username, avatar_url, short_id, role")
       .eq("id", partnerId)
       .single();
 
     const name = partner?.username || "User";
     const avatar = partner?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`;
-
+    const unreadCount = unreadCountMap.get(roomId) || 0;
+    
+    // Teks pesan terakhir
     let lastMsg = chat.sticker_url ? "🖼 Stiker" : (chat.message || "Klik untuk chat");
     if (chat.message === "Pesan ini telah dihapus") lastMsg = "🚫 Pesan dihapus";
-    lastMsg = lastMsg.length > 20 ? lastMsg.substring(0, 20) + "..." : lastMsg;
 
     const chatEl = document.createElement("div");
-    chatEl.className = "sidebar-chat-item";
-    chatEl.style.cssText = "display:flex; align-items:center; padding:12px; border-bottom:1px solid #f5f5f5; cursor:pointer;";
+    chatEl.className = `sidebar-chat-item ${unreadCount > 0 ? 'unread' : ''}`;
+    
+    // Indikator Pesan Terkirim (Centang di sidebar jika itu pesan kita)
+    const myLastMsgIcon = chat.user_id === currentUser.id ? getStatusIcon(chat.status || 'sent') : "";
 
     chatEl.innerHTML = `
-      <img src="${avatar}" style="width:45px; height:45px; border-radius:50%; margin-right:12px; object-fit:cover; border:1px solid #eee;">
-      <div style="flex:1; overflow:hidden;">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <strong style="font-size:14px; color:#333;">${escapeHtml(name)}</strong>
-          <span style="font-size:10px; color:#bbb;">${formatTime(chat.created_at)}</span>
+      <div style="display: flex; align-items: center; padding: 12px 15px; border-bottom: 1px solid rgba(0,0,0,0.05); cursor: pointer; position: relative;">
+        
+        <div style="position: relative; flex-shrink: 0;">
+          <img src="${avatar}" style="width: 52px; height: 52px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+          ${unreadCount > 0 ? `<div style="position: absolute; top: 0; right: 0; background: #ff4757; color: white; font-size: 10px; font-weight: bold; min-width: 18px; height: 18px; border-radius: 10px; display: flex; align-items: center; justify-content: center; border: 2px solid white;">${unreadCount}</div>` : ''}
         </div>
-        <div style="font-size:12px; color:#888; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-          ${escapeHtml(lastMsg)}
+
+        <div style="flex: 1; margin-left: 14px; overflow: hidden;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+            <strong style="font-size: 15px; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+              ${escapeHtml(name)} ${getBadge(partner?.role)}
+            </strong>
+            <span style="font-size: 11px; color: ${unreadCount > 0 ? '#0088cc' : '#999'}; font-weight: ${unreadCount > 0 ? 'bold' : 'normal'};">
+              ${formatTime(chat.created_at)}
+            </span>
+          </div>
+          
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <div style="transform: scale(0.7); display: inline-block;">${myLastMsgIcon}</div>
+            <div style="font-size: 13px; color: ${unreadCount > 0 ? '#333' : '#777'}; font-weight: ${unreadCount > 0 ? '600' : 'normal'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;">
+              ${escapeHtml(lastMsg)}
+            </div>
+          </div>
         </div>
+
       </div>
     `;
 
@@ -1183,10 +1192,10 @@ async function sendSticker(url) {
     if (error) throw error;
 
     const tempEl = document.getElementById(`msg-${tempId}`);
-    if (tempEl && data) {
-      tempEl.id = `msg-${data.id}`;
-      updateMessageStatusUI(data.id, "sent");
-    }
+if (tempEl && data) {
+  tempEl.id = `msg-${data.id}`; // Ganti ID agar tidak dianggap pesan baru oleh Realtime
+  updateMessageStatusUI(data.id, 'sent');
+}
 
     if (stickerMenu) stickerMenu.style.display = "none";
 
