@@ -1,15 +1,16 @@
-let isMidtransLoading = false; // Flag baru
+// Flag untuk mencegah load Midtrans berkali-kali
+let isMidtransLoading = false;
 
+// Load Midtrans Snap
 function loadMidtrans() {
-  if (window.snap) return;
-  if (isMidtransLoading) return; // Stop jika sedang loading
-
+  if (window.snap || isMidtransLoading) return;
   isMidtransLoading = true;
+
   const script = document.createElement("script");
   script.src = "https://app.sandbox.midtrans.com/snap/snap.js";
   script.setAttribute("data-client-key", "SB-Mid-client-G2wOVrrTwcffYhkC");
   script.async = true;
-  
+
   script.onload = () => {
     console.log("✅ Midtrans Snap loaded!");
     isMidtransLoading = false;
@@ -21,7 +22,75 @@ function loadMidtrans() {
   document.head.appendChild(script);
 }
 
+// Event beli koin
+document.querySelectorAll(".buy-coin-btn").forEach((btn) => {
+  btn.onclick = async (e) => {
+    e.preventDefault();
+    btn.classList.add("btn-loading");
 
+    const card = btn.closest(".coin-product-card");
+    if (!card) return;
+
+    const price = parseInt(card.dataset.price || "0", 10);
+    const coins = parseInt(card.dataset.coins || "0", 10);
+    const name = card.querySelector(".p-name")?.innerText || "Top Up Koin";
+
+    try {
+      // Ambil user & session
+      const { data: { user }, error: userErr } = await db.auth.getUser();
+      const { data: { session }, error: sessionErr } = await db.auth.getSession();
+
+      if (!user || !session) throw new Error("User belum login / session habis");
+
+      // Pastikan Snap siap
+      if (!window.snap) {
+        loadMidtrans();
+        showToast("Menyiapkan pembayaran", "Klik lagi setelah beberapa detik", "info");
+        btn.classList.remove("btn-loading");
+        return;
+      }
+
+      // Request token dari Supabase Function
+      const res = await fetch("https://hqetnqnvmdxdgfnnluew.supabase.co/functions/v1/pay-coins", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          email: user.email,
+          amount: price,
+          coins: coins,
+          item_name: name,
+        }),
+      });
+
+      const raw = await res.text();
+      let result;
+      try { result = JSON.parse(raw); } catch (err) { throw new Error("Response server tidak valid: " + raw); }
+
+      const token = result?.token;
+      if (!token) throw new Error("Token pembayaran tidak ditemukan");
+
+      btn.classList.remove("btn-loading");
+
+      // Trigger pembayaran Snap
+      window.snap.pay(token, {
+        onSuccess: () => {
+          showToast("Pembayaran berhasil", "Koin akan masuk setelah pembayaran dikonfirmasi", "success");
+        },
+        onPending: () => showToast("Menunggu pembayaran", "Selesaikan transaksi terlebih dahulu", "warning"),
+        onError: () => showToast("Pembayaran gagal", "Silakan coba lagi", "error"),
+        onClose: () => showToast("Popup ditutup", "Pembayaran belum selesai", "info"),
+      });
+    } catch (err) {
+      console.error(err);
+      btn.classList.remove("btn-loading");
+      showToast("Error", err.message || "Terjadi kesalahan pembayaran", "error");
+    }
+  };
+});
 // =======================
 // DYNAMIC BADGE SYSTEM
 // =======================
@@ -1231,13 +1300,15 @@ document.querySelectorAll(".buy-coin-btn").forEach((button) => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({
-          userId: user.id,
-          email: user.email,
-          amount: price,
-          coins: coins,
-          item_name: name,
-        }),
+        // Baris +/- 540
+body: JSON.stringify({
+  userId: user.id, // Pastikan ini tetap user.id (JANGAN di-slice)
+  email: user.email,
+  amount: price,
+  coins: coins,
+  item_name: name,
+}),
+
       });
 
       console.log("response status:", response.status);
