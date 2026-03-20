@@ -303,6 +303,7 @@ function initGiftButtons() {
 async function processGiftTransaction() {
   const sendBtn = document.getElementById("sendGiftBtn");
   const amount = parseInt(giftState.selectedAmount) || 0;
+  const giftImage = giftState.selectedImage; // ambil gambar yang dipilih
 
   if (!sendBtn) return;
   if (amount <= 0) { alert("Pilih jumlah coin dulu."); return; }
@@ -316,17 +317,13 @@ async function processGiftTransaction() {
     if (!authUser) { openLogin(); return; }
 
     // --- BAGIAN SAKTI (RPC) ---
-    // Memanggil fungsi transfer_coins yang kamu buat di SQL Editor Supabase
     const { error: transferError } = await supabaseClient.rpc('transfer_coins', {
       sender_id: authUser.id,
       receiver_id: giftState.creatorId,
       amount: amount
     });
 
-    if (transferError) {
-      // Kalau koin gak cukup atau RLS bermasalah, dia bakal berhenti di sini
-      throw new Error(transferError.message);
-    }
+    if (transferError) throw new Error(transferError.message);
 
     // --- CATAT RIWAYAT ---
     await supabaseClient.from("gift_transactions").insert({
@@ -337,18 +334,15 @@ async function processGiftTransaction() {
     });
 
     // --- SELESAI & EFEK ---
-    
-    // Jalankan Animasi Cinematic yang meriah tadi
-    triggerGiftAnimation();
+    triggerGiftAnimation(giftImage); // <-- kirim nama file gift
 
-    // Ambil username lo buat notifikasi
+    // Kirim notifikasi
     const { data: senderProfile } = await supabaseClient
       .from("profiles")
       .select("username")
       .eq("id", authUser.id)
       .single();
 
-    // Kirim Notifikasi
     await createNotification({
       user_id: giftState.creatorId,
       actor_id: authUser.id,
@@ -357,11 +351,8 @@ async function processGiftTransaction() {
       message: `${senderProfile?.username || "Seseorang"} mengirim ${amount} coin ke postingan Anda`,
     });
 
-    // Update state koin di layar biar langsung berkurang
-    giftState.userCoins = giftState.userCoins - amount;
-    
+    giftState.userCoins -= amount;
     closeGiftSheet();
-
     if (typeof loadUserProfile === "function") await loadUserProfile();
 
   } catch (err) {
@@ -372,7 +363,6 @@ async function processGiftTransaction() {
     sendBtn.textContent = "Kirim Gift";
   }
 }
-
 // =======================
 // GIFT SYSTEM
 // =======================
@@ -406,35 +396,156 @@ function openGiftSheet({ postId, creatorId, creatorName, userCoins }) {
   document.body.style.overflow = "hidden"; 
 }
 
-// Fungsi buat pilih hadiah (DIPANGGIL DARI ONCLICK DI HTML)
-function selectGift(element, amount) {
-  // Hapus class active dari semua item
-  document.querySelectorAll('.gift-item').forEach(item => item.classList.remove('active'));
-  
-  // Tambah class active ke yang diklik
-  element.classList.add('active');
-  
-  // Update state jumlah koin yang dipilih
+// 1. Pastikan variabel ini ada di paling atas (Global Scope)
+let selectedGiftImage = null; 
+
+// 2. Fungsi Pilih Gift (Sesuai dengan onclick di HTML)
+function selectGift(element, amount, imageName) {
+  // 1. Hapus tanda 'selected-gift' dari semua item lain dulu
+  document.querySelectorAll('.gift-item').forEach(item => {
+    item.classList.remove('selected-gift');
+  });
+
+  // 2. Tambahkan tanda ke item yang barusan diklik
+  element.classList.add('selected-gift');
+
+  // 3. Simpan datanya ke variabel global
+  selectedGiftImage = imageName;
   giftState.selectedAmount = amount;
-  
-  // Aktifkan tombol kirim
-  const sendBtn = document.getElementById("sendGiftBtn");
+
+  // 4. Nyalain tombol kirim
+  const sendBtn = document.getElementById('sendGiftBtn');
   if (sendBtn) {
     sendBtn.disabled = false;
-    sendBtn.textContent = `Kirim (${amount})`;
+    sendBtn.style.opacity = "1";
+    sendBtn.textContent = `Kirim (${amount} Koin)`;
   }
 }
 
+// 3. Fungsi Proses Transaksi (Gabungan Supabase + Animasi)
+async function processGiftTransaction() {
+  const amount = giftState.selectedAmount;
+  const giftImage = selectedGiftImage; // Ambil gambar yang tadi dipilih
+  const sendBtn = document.getElementById("sendGiftBtn");
+
+  if (!giftImage || amount <= 0) return;
+  if (amount > giftState.userCoins) {
+    alert("Coin kamu tidak cukup 😢");
+    return;
+  }
+
+  sendBtn.disabled = true;
+  sendBtn.textContent = "Mengirim...";
+
+  try {
+    const { data: { user: authUser } } = await supabaseClient.auth.getUser();
+    if (!authUser) return;
+
+    // --- PROSES POTONG KOIN DI DATABASE ---
+    const { error: transferError } = await supabaseClient.rpc('transfer_coins', {
+      sender_id: authUser.id,
+      receiver_id: giftState.creatorId,
+      amount: amount
+    });
+
+    if (transferError) throw new Error(transferError.message);
+
+    // --- CATAT RIWAYAT ---
+    await supabaseClient.from("gift_transactions").insert({
+      sender_id: authUser.id,
+      receiver_id: giftState.creatorId,
+      post_id: parseInt(giftState.postId),
+      amount: amount
+    });
+
+    // --- JALANKAN ANIMASI (Gunakan fungsi showBigImage kamu) ---
+    showBigImage(giftImage); 
+    
+    // Efek Tambahan: Confetti
+    confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+
+    // --- NOTIFIKASI KE PEMILIK POST ---
+    const { data: senderProfile } = await supabaseClient
+      .from("profiles")
+      .select("username")
+      .eq("id", authUser.id)
+      .single();
+
+    await createNotification({
+      user_id: giftState.creatorId,
+      actor_id: authUser.id,
+      post_id: giftState.postId,
+      type: "gift",
+      message: `${senderProfile?.username || "Seseorang"} mengirim ${amount} coin ke postingan Anda`,
+    });
+
+    // --- RESET STATE ---
+    giftState.userCoins -= amount;
+    const coinDisplay = document.getElementById("giftUserCoins");
+    if (coinDisplay) coinDisplay.textContent = giftState.userCoins;
+    
+    closeGiftSheet();
+
+  } catch (err) {
+    console.error("Gift error:", err.message);
+    alert("Gagal mengirim gift: " + err.message);
+  } finally {
+    sendBtn.disabled = false;
+    sendBtn.textContent = "Kirim";
+    selectedGiftImage = null; // Reset gambar
+  }
+}
+
+ 
+// SHOW SMOOTH TIKTOK GIFT ANIMATION
+// =======================
+function showBigImage(imageName) {
+  const container = document.getElementById('giftAnimationContainer');
+  if (!container) return;
+
+  // 1. Bersihkan kontainer agar tidak menumpuk
+  container.innerHTML = '';
+
+  // 2. Buat elemen gambar utama saja
+  const mainImg = document.createElement('img');
+  mainImg.src = imageName;
+  
+  // Gunakan class CSS yang sudah kita buat sebelumnya untuk animasi smooth
+  mainImg.className = 'gift-main-img'; 
+  
+  container.appendChild(mainImg);
+
+  // 3. Tambahkan efek Confetti (opsional, hapus jika tidak mau ada partikel warna-warni)
+  confetti({
+    particleCount: 150,
+    spread: 70,
+    origin: { y: 0.6 },
+    zIndex: 999999
+  });
+
+  // 4. Hilangkan otomatis setelah 2.5 detik
+  setTimeout(() => { 
+    container.innerHTML = ''; 
+  }, 2500);
+}
+
+// =======================
+// CLOSE GIFT SHEET
+// =======================
 function closeGiftSheet() {
   const sheet = document.getElementById("giftSheet");
-  if (sheet) {
-    sheet.classList.remove("active");
-    document.body.style.overflow = ""; 
-  }
+  if (!sheet) return;
+
+  sheet.classList.remove("active");
+  document.body.style.overflow = ""; // kembalikan scroll
+
+  // Reset pilihan gift
+  giftState.selectedAmount = 0;
+  selectedGiftImage = null;
+  document.querySelectorAll('.gift-item').forEach(g => g.classList.remove('selected-gift'));
+  const sendBtn = document.getElementById('sendGiftBtn');
+  if (sendBtn) sendBtn.disabled = true;
 }
-
-
-
 // =======================
 // COMMENTS & REPLY SYSTEM
 // =======================
@@ -945,43 +1056,41 @@ function initRealtime() {
     )
     .subscribe();
 }
-function triggerGiftAnimation() {
-  const popup = document.getElementById("giftSuccessPopup");
-  if (!popup) return;
+function triggerGiftAnimation(giftImage) {
+  const container = document.getElementById("giftAnimationContainer");
+  if (!container) return;
+  container.innerHTML = "";
 
-  popup.style.display = "flex";
+  for (let i = 0; i < 3; i++) { // tampilkan 3 gambar sekaligus
+    const img = document.createElement("img");
+    img.src = giftImage; // <-- tampilkan gift sesuai pilihan
+    img.style.position = "absolute";
+    img.style.width = "80px";
+    img.style.height = "80px";
+    img.style.left = `${Math.random() * 100 - 50}px`;
+    img.style.bottom = "-100px";
+    img.style.opacity = 0;
+    img.style.transition = "all 1.5s ease-out";
+    container.appendChild(img);
 
-  // Meledakkan Confetti tepat dari tengah layar
+    setTimeout(() => {
+      img.style.bottom = `${150 + Math.random() * 100}px`;
+      img.style.opacity = 1;
+      img.style.transform = `rotate(${Math.random() * 360}deg)`;
+    }, 50);
+
+    setTimeout(() => {
+      img.style.opacity = 0;
+      img.remove();
+    }, 1600);
+  }
+
+  // Confetti tetap jalan
   const end = Date.now() + 1000;
   const colors = ['#ffffff', '#FFD700', '#fff9c4', '#F0F0F0'];
-
   (function frame() {
-    confetti({
-      particleCount: 15,
-      angle: 60,
-      spread: 70,
-      origin: { x: 0.5, y: 0.5 }, // MELEDAK DARI TENGAH
-      colors: colors,
-      startVelocity: 60,
-      gravity: 0.5
-    });
-    confetti({
-      particleCount: 15,
-      angle: 120,
-      spread: 70,
-      origin: { x: 0.5, y: 0.5 },
-      colors: colors,
-      startVelocity: 60,
-      gravity: 0.5
-    });
-
-    if (Date.now() < end) {
-      requestAnimationFrame(frame);
-    }
+    confetti({ particleCount: 15, angle: 60, spread: 70, origin: { x: 0.5, y: 0.5 }, colors, startVelocity: 60, gravity: 0.5 });
+    confetti({ particleCount: 15, angle: 120, spread: 70, origin: { x: 0.5, y: 0.5 }, colors, startVelocity: 60, gravity: 0.5 });
+    if (Date.now() < end) requestAnimationFrame(frame);
   }());
-
-  // Tutup container setelah selesai
-  setTimeout(() => {
-    popup.style.display = "none";
-  }, 2500);
 }

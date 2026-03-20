@@ -110,19 +110,57 @@
       <span class="gift-close-x" onclick="closeGiftSheet()">&times;</span>
     </div>
 
-    <div class="gift-grid">
-      <div class="gift-item" data-amount="10" onclick="selectGift(this, 10)">
-        <div class="gift-img-container">
-          <img src="loki.png" class="img-gift" alt="Mira Gift">
-        </div>
-        <span class="gift-name">bear gift</span>
-        <span class="gift-price">
-          <img src="koin.svg" class="img-coin-inline"> 10
-        </span>
-      </div>
-      
-      </div>
+<div class="gift-grid">
+  <div class="gift-item" data-amount="10" onclick="selectGift(this, 10, 'gift1.png')">
+    <div class="gift-img-container">
+      <img src="gift1.png" class="img-gift" alt="Gift 1">
+    </div>
+    <span class="gift-name">troi</span>
+    <span class="gift-price">
+      <img src="koin.svg" class="img-coin-inline"> 10
+    </span>
+  </div>
 
+  <div class="gift-item" data-amount="20" onclick="selectGift(this, 20, 'gift2.png')">
+    <div class="gift-img-container">
+      <img src="gift2.png" class="img-gift" alt="Gift 2">
+    </div>
+    <span class="gift-name">fox</span>
+    <span class="gift-price">
+      <img src="koin.svg" class="img-coin-inline"> 20
+    </span>
+  </div>
+
+  <div class="gift-item" data-amount="20" onclick="selectGift(this, 20, 'gift3.png')">
+    <div class="gift-img-container">
+      <img src="gift3.png" class="img-gift" alt="Gift 3">
+    </div>
+    <span class="gift-name">panda</span>
+    <span class="gift-price">
+      <img src="koin.svg" class="img-coin-inline"> 20
+    </span>
+  </div>
+
+  <div class="gift-item" data-amount="25" onclick="selectGift(this, 25, 'gift4.png')">
+    <div class="gift-img-container">
+      <img src="gift4.png" class="img-gift" alt="Gift 4">
+    </div>
+    <span class="gift-name">Rabbit</span>
+    <span class="gift-price">
+      <img src="koin.svg" class="img-coin-inline"> 25
+    </span>
+  </div>
+
+  <div class="gift-item" data-amount="100" onclick="selectGift(this, 100, 'gift5.png')">
+    <div class="gift-img-container">
+      <img src="gift5.png" class="img-gift" alt="Gift 5">
+    </div>
+    <span class="gift-name">Catglow</span>
+    <span class="gift-price">
+      <img src="koin.svg" class="img-coin-inline"> 100
+    </span>
+  </div>
+</div>
     <div class="gift-footer">
       <div class="user-coins-info">
         <img src="koin.svg" class="img-coin-footer">
@@ -135,12 +173,35 @@
     </div>
   </div>
 </div>
-<div id="giftSuccessPopup" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000; align-items: center; justify-content: center; pointer-events: none; overflow: hidden;">
-    <div class="glow-bg"></div>
-    <div class="meriah-text">SEND GIFT</div>
+<div id="bigImageContainer" style="
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 99999;
+  pointer-events: auto;
+">
+  <div id="bigImageOverlay" style="
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.7);
+    z-index: 1;
+  " onclick="closeBigImage()"></div>
+
+  <img id="bigImage" src="" style="
+    max-width: 90vw;
+    max-height: 90vh;
+    position: relative;
+    z-index: 2;
+    border-radius: 15px;
+    box-shadow: 0 0 20px #000;
+  ">
 </div>
-
-
+<div id="giftAnimationContainer" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 99999;"></div>
 
 
   <!-- SUPABASE CDN -->
