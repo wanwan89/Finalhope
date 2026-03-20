@@ -813,4 +813,23 @@ html, body {
     transform: translateY(0);
   }
 }
- 
+/* Efek saat kursor di atas chat item */
+.sidebar-chat-item:hover {
+  background-color: #f5f9ff !important;
+  cursor: pointer;
+}
+
+/* Penanda jika ada pesan yang belum dibaca */
+.sidebar-chat-item.unread {
+  background-color: #f0faff;
+}
+
+/* Animasi angka merah agar lebih eye-catching */
+#private-chat-list .unread-badge {
+  animation: bounce 0.5s ease-in-out;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}

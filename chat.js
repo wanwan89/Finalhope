@@ -752,16 +752,13 @@ function initRealtimeMessages() {
         event: 'INSERT',
         schema: 'public',
         table: 'messages'
-        // 💡 FILTER DIHAPUS agar sidebar bisa update untuk semua room
       },
       async (payload) => {
         const newMsg = payload.new;
 
-        // 2. UPDATE SIDEBAR (Realtime Update)
-        // Panggil ini setiap ada pesan baru agar daftar chat di sidebar langsung sinkron
-        loadChatHistory();
+        // ✅ INI KUNCINYA: Sidebar otomatis update di sini
+        loadChatHistory(); 
 
-        // 3. LOGIKA TAMPILAN CHAT (Hanya jika sedang membuka room yang sama)
         if (newMsg.room_id === currentRoomId) {
           
           // Cegah double bubble (jika elemen sudah ada di layar, jangan render lagi)
@@ -905,102 +902,102 @@ function renderGlobalChatItem(container) {
   container.appendChild(globalBtn);
 }
 
-// ===== Load Chat History (Versi Premium) =====
 async function loadChatHistory() {
-  const list = document.getElementById("private-chat-list");
-  if (!list || !currentUser) return;
+  const privateList = document.getElementById("private-chat-list");
+  if (!privateList || !currentUser) return;
 
-  // 1. Ambil data pesan terbaru + status untuk badge unread
+  // 1. Ambil data pesan private (pv_)
   const { data: messages, error } = await supabase
     .from("messages")
     .select("room_id, message, created_at, sticker_url, user_id, status")
-    .neq("room_id", "room-1")
-    .ilike("room_id", `%${currentUser.id}%`)
+    .ilike("room_id", "pv_%") 
+    .ilike("room_id", `%${currentUser.id}%`) 
     .order("created_at", { ascending: false });
 
-  if (error) {
-    console.error("Gagal muat riwayat:", error);
-    return;
-  }
+  if (error) return console.error("Gagal muat riwayat:", error);
 
-  // 2. Map untuk pesan terakhir & hitung unread per room
+  // 2. Gunakan Partner ID sebagai Kunci Utama di Map
   const lastMessagesMap = new Map();
   const unreadCountMap = new Map();
 
   messages.forEach(msg => {
-    // Simpan pesan paling baru saja
-    if (!lastMessagesMap.has(msg.room_id)) {
-      lastMessagesMap.set(msg.room_id, msg);
+    // Cari tahu siapa partner bicaranya
+    const parts = msg.room_id.replace("pv_", "").split("_");
+    const partnerId = parts.find(id => id !== currentUser.id);
+    
+    if (!partnerId) return; // Lewati jika format rusak
+
+    // Kunci Map berdasarkan Partner ID (Paling Akurat)
+    if (!lastMessagesMap.has(partnerId)) {
+      lastMessagesMap.set(partnerId, msg);
     }
-    // Hitung pesan yang belum dibaca (dikirim orang lain & status bukan read)
+
+    // Hitung unread khusus pesan masuk
     if (msg.user_id !== currentUser.id && msg.status !== 'read') {
-      const currentCount = unreadCountMap.get(msg.room_id) || 0;
-      unreadCountMap.set(msg.room_id, currentCount + 1);
+      unreadCountMap.set(partnerId, (unreadCountMap.get(partnerId) || 0) + 1);
     }
   });
 
-  // 3. Reset UI Sidebar
-  list.innerHTML = "";
-  renderGlobalChatItem(list); // Tetap munculkan Chat Global di paling atas
+  // 3. Bersihkan UI dan Render Ulang
+  privateList.innerHTML = "";
+  
+  // Render Global Chat tetap paling atas
+  renderGlobalChatItem(privateList);
 
-  // 4. Looping untuk membuat item chat
-  for (const [roomId, chat] of lastMessagesMap) {
-    const partnerId = roomId.replace("pv_", "").split("_").find(id => id !== currentUser.id);
-    if (!partnerId) continue;
+  const label = document.createElement("div");
+  label.innerHTML = `<div style="padding:10px 15px; font-size:11px; color:#999; font-weight:bold; background:#f8f9fa;">RIWAYAT CHAT PRIBADI</div>`;
+  privateList.appendChild(label);
 
-    // Ambil data partner (Username, Avatar, Role)
-    const { data: partner } = await supabase
-      .from("profiles")
-      .select("username, avatar_url, short_id, role")
-      .eq("id", partnerId)
-      .single();
+  if (lastMessagesMap.size === 0) {
+    privateList.innerHTML += `<div style="text-align:center; opacity:0.5; padding:20px; font-size:12px;">Belum ada riwayat chat</div>`;
+    return;
+  }
 
-    const name = partner?.username || "User";
-    const avatar = partner?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`;
-    const unreadCount = unreadCountMap.get(roomId) || 0;
+  // 4. Ambil Profil Partner sekaligus
+  const partnerIds = Array.from(lastMessagesMap.keys());
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, username, avatar_url, short_id, role")
+    .in("id", partnerIds);
+
+  const profileMap = new Map(profiles?.map(p => [p.id, p]));
+
+  // 5. Loop Map yang sudah pasti unik per Partner ID
+  lastMessagesMap.forEach((chat, partnerId) => {
+    const partner = profileMap.get(partnerId);
+    if (!partner) return;
+
+    const name = partner.username || "User";
+    const avatar = partner.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`;
+    const unreadCount = unreadCountMap.get(partnerId) || 0;
+    const myLastMsgIcon = chat.user_id === currentUser.id ? getStatusIcon(chat.status || 'sent') : "";
     
-    // Teks pesan terakhir
     let lastMsg = chat.sticker_url ? "🖼 Stiker" : (chat.message || "Klik untuk chat");
     if (chat.message === "Pesan ini telah dihapus") lastMsg = "🚫 Pesan dihapus";
 
     const chatEl = document.createElement("div");
     chatEl.className = `sidebar-chat-item ${unreadCount > 0 ? 'unread' : ''}`;
-    
-    // Indikator Pesan Terkirim (Centang di sidebar jika itu pesan kita)
-    const myLastMsgIcon = chat.user_id === currentUser.id ? getStatusIcon(chat.status || 'sent') : "";
-
     chatEl.innerHTML = `
-      <div style="display: flex; align-items: center; padding: 12px 15px; border-bottom: 1px solid rgba(0,0,0,0.05); cursor: pointer; position: relative;">
-        
-        <div style="position: relative; flex-shrink: 0;">
-          <img src="${avatar}" style="width: 52px; height: 52px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
-          ${unreadCount > 0 ? `<div style="position: absolute; top: 0; right: 0; background: #ff4757; color: white; font-size: 10px; font-weight: bold; min-width: 18px; height: 18px; border-radius: 10px; display: flex; align-items: center; justify-content: center; border: 2px solid white;">${unreadCount}</div>` : ''}
+      <div style="display: flex; align-items: center; padding: 12px 15px; border-bottom: 1px solid rgba(0,0,0,0.03); cursor: pointer;">
+        <div style="position: relative;">
+          <img src="${avatar}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
+          ${unreadCount > 0 ? `<div style="position: absolute; top: -2px; right: -2px; background: #ff4757; color: white; font-size: 10px; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white;">${unreadCount}</div>` : ''}
         </div>
-
-        <div style="flex: 1; margin-left: 14px; overflow: hidden;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
-            <strong style="font-size: 15px; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-              ${escapeHtml(name)} ${getBadge(partner?.role)}
-            </strong>
-            <span style="font-size: 11px; color: ${unreadCount > 0 ? '#0088cc' : '#999'}; font-weight: ${unreadCount > 0 ? 'bold' : 'normal'};">
-              ${formatTime(chat.created_at)}
-            </span>
+        <div style="flex: 1; margin-left: 12px; overflow: hidden;">
+          <div style="display: flex; justify-content: space-between;">
+            <strong style="font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name}</strong>
+            <span style="font-size: 10px; color: #999;">${formatTime(chat.created_at)}</span>
           </div>
-          
-          <div style="display: flex; align-items: center; gap: 4px;">
-            <div style="transform: scale(0.7); display: inline-block;">${myLastMsgIcon}</div>
-            <div style="font-size: 13px; color: ${unreadCount > 0 ? '#333' : '#777'}; font-weight: ${unreadCount > 0 ? '600' : 'normal'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;">
-              ${escapeHtml(lastMsg)}
-            </div>
+          <div style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: #666;">
+             ${myLastMsgIcon} <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${lastMsg}</span>
           </div>
         </div>
-
       </div>
     `;
 
-    chatEl.onclick = () => bukaChatPribadi(partnerId, name, partner?.short_id || '');
-    list.appendChild(chatEl);
-  }
+    chatEl.onclick = () => bukaChatPribadi(partnerId, name, partner.short_id || '');
+    privateList.appendChild(chatEl);
+  });
 }
 
 // ===== Search Friend by ID =====
@@ -1397,6 +1394,21 @@ if (btnCariDoiActual) {
     }, 2500);
   };
 }
+// Listener untuk update sidebar secara otomatis tanpa refresh
+supabase
+  .channel('sidebar-updates')
+  .on('postgres_changes', { 
+    event: 'INSERT', 
+    schema: 'public', 
+    table: 'messages' 
+  }, (payload) => {
+    // Jika pesan melibatkan user yang sedang login, refresh daftar chat di sidebar
+    if (payload.new.room_id.includes(currentUser.id) || payload.new.room_id === 'room-1') {
+      loadChatHistory(); 
+    }
+  })
+  .subscribe();
+
 
 // ===== Auto read when app visible =====
 document.addEventListener("visibilitychange", async () => {

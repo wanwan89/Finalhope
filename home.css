@@ -1765,3 +1765,14 @@ body.dark #notificationList {
   font-size: 12px;
   font-weight: 500;
 }
+/* Menghilangkan kotak biru/abu-abu saat elemen diklik di mobile */
+* {
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+}
+
+/* Khusus untuk tombol atau menu agar tidak ada outline saat difokuskan */
+.menu-item-tiktok, .btn, .tab, button {
+    -webkit-tap-highlight-color: rgba(0,0,0,0);
+    user-select: none; /* Biar teksnya nggak gak sengaja kepilih/keblok */
+}
