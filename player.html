@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Mini Music Player</title>
+<style>
+  body {
+    margin: 0;
+    background: transparent;
+  }
+  #player {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #1DA1F2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  #player svg { width: 30px; height: 30px; fill: white; }
+</style>
+</head>
+<body>
+  <div id="player">
+    <svg id="icon" viewBox="0 0 24 24">
+      <path d="M8 5v14l11-7z"/> <!-- play icon -->
+    </svg>
+  </div>
+
+  <audio id="music" src="musik.mp3" loop></audio>
+
+  <script>
+    const music = document.getElementById("music");
+    const player = document.getElementById("player");
+    const icon = document.getElementById("icon");
+
+    // resume posisi dari localStorage
+    const savedTime = localStorage.getItem("bgMusicTime");
+    if(savedTime) music.currentTime = parseFloat(savedTime);
+
+    // klik toggle play/pause
+    player.addEventListener("click", () => {
+      if(music.paused) {
+        music.play();
+        icon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>'; // pause icon
+      } else {
+        music.pause();
+        icon.innerHTML = '<path d="M8 5v14l11-7z"/>'; // play icon
+      }
+    });
+
+    music.play().catch(()=>{}); // autoplay (akan gagal jika belum ada interaksi)
+
+    // simpan posisi saat pindah halaman
+    window.addEventListener("beforeunload", ()=>{
+      localStorage.setItem("bgMusicTime", music.currentTime);
+    });
+  </script>
+</body>
+</html>
