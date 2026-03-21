@@ -1,5 +1,28 @@
-console.log("JS CONNECTED");
+// Ganti namanya biar gak bentrok sama library (Recursion Fix)
+function showNotif(msg, type = "info") {
+  console.log(`[Notif]: ${msg} (${type})`);
 
+  // 1. Cek apakah library toast.js lo beneran ada di window
+  // Kita cek apakah window.toast itu fungsi DAN bukan fungsi ini sendiri
+  if (typeof window.toast === "function" && window.toast !== showNotif) {
+    const title = type === "success" ? "Berhasil" : type === "error" ? "Gagal" : "Info";
+    
+    try {
+      // Panggil fungsi asli dari library toast.js lo
+      window.toast(title, msg, type); 
+      return;
+    } catch (e) {
+      console.warn("Gagal panggil library toast, pakai fallback alert.");
+    }
+  }
+
+  // 2. Fallback jika library belum load atau error
+  alert(`${type.toUpperCase()}: ${msg}`);
+}
+
+console.log("JS CONNECTED");
+const CLOUDINARY_CLOUD_NAME = "dhhmkb8kl";
+const CLOUDINARY_UPLOAD_PRESET = "post_hope";
 // =======================
 // SUPABASE INIT
 // =======================
@@ -96,11 +119,12 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     safeInit("Search", initSearch);
-    safeInit("ReplyClick", initReplyClick);
-    safeInit("Auth", initAuth);
-    safeInit("Realtime", initRealtime);
-    safeInit("CloseButtons", initCloseButtons);
-    if (typeof initGiftSheet === "function") safeInit("GiftSheet", initGiftSheet);
+safeInit("ReplyClick", initReplyClick);
+safeInit("Auth", initAuth);
+safeInit("Realtime", initRealtime);
+safeInit("CloseButtons", initCloseButtons);
+safeInit("PostModal", initPostModal);
+if (typeof initGiftSheet === "function") safeInit("GiftSheet", initGiftSheet);
   };
 
   // Jalankan fungsi utama
@@ -150,7 +174,10 @@ async function fetchPosts(category = "all") {
     '<div style="color:white; text-align:center; grid-column:1/-1; padding:50px;">Memuat karya...</div>';
 
   try {
-    let query = supabaseClient.from("posts").select("*");
+    let query = supabaseClient
+  .from("posts")
+  .select("*")
+  .eq("status", "approved");
 
     if (category !== "all") {
       query = query.eq("category", category);
@@ -273,7 +300,7 @@ function initGiftButtons() {
       const creatorName = newBtn.dataset.name || "Creator";
 
       if (authUser.id === creatorId) {
-        alert("Kamu tidak bisa gift ke postingan sendiri 😅");
+        toast("Kamu tidak bisa gift ke postingan sendiri ");
         return;
       }
 
@@ -285,7 +312,7 @@ function initGiftButtons() {
 
       if (senderError || !senderProfile) {
         console.error("Sender profile error:", senderError);
-        alert("Gagal membaca data coin kamu.");
+        toast("Gagal membaca data coin kamu.");
         return;
       }
 
@@ -300,69 +327,7 @@ function initGiftButtons() {
     });
   });
 }
-async function processGiftTransaction() {
-  const sendBtn = document.getElementById("sendGiftBtn");
-  const amount = parseInt(giftState.selectedAmount) || 0;
-  const giftImage = giftState.selectedImage; // ambil gambar yang dipilih
 
-  if (!sendBtn) return;
-  if (amount <= 0) { alert("Pilih jumlah coin dulu."); return; }
-  if (amount > giftState.userCoins) { alert("Coin kamu tidak cukup 😢"); return; }
-
-  sendBtn.disabled = true;
-  sendBtn.textContent = "Mengirim...";
-
-  try {
-    const { data: { user: authUser } } = await supabaseClient.auth.getUser();
-    if (!authUser) { openLogin(); return; }
-
-    // --- BAGIAN SAKTI (RPC) ---
-    const { error: transferError } = await supabaseClient.rpc('transfer_coins', {
-      sender_id: authUser.id,
-      receiver_id: giftState.creatorId,
-      amount: amount
-    });
-
-    if (transferError) throw new Error(transferError.message);
-
-    // --- CATAT RIWAYAT ---
-    await supabaseClient.from("gift_transactions").insert({
-      sender_id: authUser.id,
-      receiver_id: giftState.creatorId,
-      post_id: parseInt(giftState.postId),
-      amount: amount
-    });
-
-    // --- SELESAI & EFEK ---
-    triggerGiftAnimation(giftImage); // <-- kirim nama file gift
-
-    // Kirim notifikasi
-    const { data: senderProfile } = await supabaseClient
-      .from("profiles")
-      .select("username")
-      .eq("id", authUser.id)
-      .single();
-
-    await createNotification({
-      user_id: giftState.creatorId,
-      actor_id: authUser.id,
-      post_id: giftState.postId,
-      type: "gift",
-      message: `${senderProfile?.username || "Seseorang"} mengirim ${amount} coin ke postingan Anda`,
-    });
-
-    giftState.userCoins -= amount;
-    closeGiftSheet();
-    if (typeof loadUserProfile === "function") await loadUserProfile();
-
-  } catch (err) {
-    console.error("Gift error:", err.message);
-    alert(err.message || "Terjadi kesalahan saat memproses transfer.");
-  } finally {
-    sendBtn.disabled = false;
-    sendBtn.textContent = "Kirim Gift";
-  }
-}
 // =======================
 // GIFT SYSTEM
 // =======================
@@ -430,7 +395,7 @@ async function processGiftTransaction() {
 
   if (!giftImage || amount <= 0) return;
   if (amount > giftState.userCoins) {
-    alert("Coin kamu tidak cukup 😢");
+    toast("Coin kamu tidak cukup ");
     return;
   }
 
@@ -488,7 +453,7 @@ async function processGiftTransaction() {
 
   } catch (err) {
     console.error("Gift error:", err.message);
-    alert("Gagal mengirim gift: " + err.message);
+    toast("Gagal mengirim gift: " + err.message);
   } finally {
     sendBtn.disabled = false;
     sendBtn.textContent = "Kirim";
@@ -972,7 +937,7 @@ function initAuth() {
     });
 
     if (error) {
-      alert(error.message);
+      toast(error.message);
     } else {
       location.reload();
     }
@@ -1093,4 +1058,234 @@ function triggerGiftAnimation(giftImage) {
     confetti({ particleCount: 15, angle: 120, spread: 70, origin: { x: 0.5, y: 0.5 }, colors, startVelocity: 60, gravity: 0.5 });
     if (Date.now() < end) requestAnimationFrame(frame);
   }());
+}
+// =======================
+// POST MODAL + UPLOAD SYSTEM
+// =======================
+let selectedPostFile = null;
+
+function initPostModal() {
+  const openBtn = document.getElementById("openPostModalBtn");
+  const closeBtn = document.getElementById("closePostModalBtn");
+  const modal = document.getElementById("postModal");
+  const uploadArea = document.getElementById("postUploadArea");
+  const imageInput = document.getElementById("postImageInput");
+  const previewImage = document.getElementById("postPreviewImage");
+  const placeholder = document.getElementById("postUploadPlaceholder");
+  const form = document.getElementById("postForm");
+
+  if (!modal || !form) return;
+
+  openBtn?.addEventListener("click", async () => {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) {
+      openLogin();
+      return;
+    }
+    modal.classList.add("active");
+    document.body.style.overflow = "hidden";
+  });
+
+  closeBtn?.addEventListener("click", closePostModal);
+
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) closePostModal();
+  });
+
+  uploadArea?.addEventListener("click", () => {
+    imageInput?.click();
+  });
+
+  imageInput?.addEventListener("change", () => {
+    const file = imageInput.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
+    const maxSize = 5 * 1024 * 1024; // 5MB
+
+    if (!allowedTypes.includes(file.type)) {
+      showNotif("Format file harus JPG, PNG, atau WEBP ya bro.", "warning");
+      imageInput.value = "";
+      return;
+    }
+
+    if (file.size > maxSize) {
+      showNotif("Ukuran file maksimal 5MB ya bro.", "warning");
+      imageInput.value = "";
+      return;
+    }
+
+    selectedPostFile = file;
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      previewImage.src = e.target.result;
+      previewImage.style.display = "block";
+      if (placeholder) placeholder.style.display = "none";
+    };
+    reader.readAsDataURL(file);
+  });
+
+  form.addEventListener("submit", handlePostSubmit);
+  
+  // Inisialisasi dropdown kategori custom
+  setupCustomCategory(); 
+}
+
+function closePostModal() {
+  const modal = document.getElementById("postModal");
+  const form = document.getElementById("postForm");
+  const previewImage = document.getElementById("postPreviewImage");
+  const placeholder = document.getElementById("postUploadPlaceholder");
+  const imageInput = document.getElementById("postImageInput");
+  const submitBtn = document.getElementById("submitPostBtn");
+
+  if (modal) modal.classList.remove("active");
+  document.body.style.overflow = "";
+
+  selectedPostFile = null;
+  if (form) form.reset();
+  if (imageInput) imageInput.value = "";
+
+  if (previewImage) {
+    previewImage.src = "";
+    previewImage.style.display = "none";
+  }
+  if (placeholder) placeholder.style.display = "flex";
+
+  if (submitBtn) {
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Kirim ke Review";
+  }
+
+  // Reset tampilan dropdown kategori
+  const displayText = document.getElementById("selectedCategoryText");
+  const hiddenInput = document.getElementById("postCategory");
+  if (displayText) displayText.innerText = "Pilih kategori";
+  if (hiddenInput) hiddenInput.value = "";
+  document.querySelectorAll(".option-item").forEach(o => o.classList.remove("selected"));
+}
+
+function setupCustomCategory() {
+  const dropdown = document.getElementById("categoryDropdown");
+  if (!dropdown) return;
+
+  const trigger = dropdown.querySelector(".select-trigger");
+  const options = dropdown.querySelectorAll(".option-item");
+  const hiddenInput = document.getElementById("postCategory");
+  const displayText = document.getElementById("selectedCategoryText");
+
+  // Reset state biar nggak nyangkut
+  dropdown.classList.remove("active");
+
+  trigger.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation(); // Biar gak lari ke klik luar
+    dropdown.classList.toggle("active");
+  };
+
+  options.forEach(opt => {
+    opt.onclick = (e) => {
+      e.stopPropagation();
+      const val = opt.getAttribute("data-value");
+      const text = opt.innerText;
+
+      displayText.innerText = text;
+      hiddenInput.value = val;
+
+      options.forEach(o => o.classList.remove("selected"));
+      opt.classList.add("selected");
+      
+      dropdown.classList.remove("active");
+    };
+  });
+
+  // Klik di mana saja buat tutup
+  document.addEventListener("click", (e) => {
+    if (!dropdown.contains(e.target)) {
+      dropdown.classList.remove("active");
+    }
+  });
+}
+
+
+async function uploadImageToCloudinary(file) {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+  formData.append("folder", "creator-posts");
+
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+    { method: "POST", body: formData }
+  );
+
+  const data = await response.json();
+  if (!response.ok) throw new Error(data?.error?.message || "Upload Cloudinary gagal");
+  return data;
+}
+
+async function handlePostSubmit(e) {
+  e.preventDefault();
+  const submitBtn = document.getElementById("submitPostBtn");
+  const caption = document.getElementById("postCaption")?.value.trim() || "";
+  const category = document.getElementById("postCategory")?.value;
+
+  if (!selectedPostFile) {
+    showNotif("Pilih foto dulu bro.", "warning");
+    return;
+  }
+  if (!category) {
+    showNotif("Pilih kategori dulu bro.", "warning");
+    return;
+  }
+
+  const { data: { user: authUser } } = await supabaseClient.auth.getUser();
+  if (!authUser) {
+    openLogin();
+    return;
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Mengupload...";
+
+  try {
+    const { data: profile } = await supabaseClient.from("profiles").select("username").eq("id", authUser.id).single();
+    
+    // Cek limit pending max 3 biar gak spam admin
+    const { count: pendingCount } = await supabaseClient
+      .from("posts")
+      .select("*", { count: "exact", head: true })
+      .eq("creator_id", authUser.id)
+      .eq("status", "pending");
+
+    if ((pendingCount || 0) >= 3) {
+      throw new Error("Sabar bro, ada 3 post kamu yang lagi direview admin.");
+    }
+
+    const cloudinaryData = await uploadImageToCloudinary(selectedPostFile);
+
+    const { error: insertError } = await supabaseClient.from("posts").insert({
+      creator_id: authUser.id,
+      name: profile?.username || "User",
+      bio: caption,
+      category: category,
+      image_url: cloudinaryData.secure_url,
+      cloudinary_public_id: cloudinaryData.public_id,
+      status: "pending"
+    });
+
+    if (insertError) throw insertError;
+
+    showNotif("Karya berhasil dikirim! Menunggu review admin", "success");
+    closePostModal();
+  } catch (err) {
+    console.error("❌ Post upload error:", err.message);
+    showNotif(err.message, "error");
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Kirim ke Review";
+    }
+  }
 }

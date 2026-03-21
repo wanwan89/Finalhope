@@ -1509,4 +1509,578 @@ color:#fff;
   background: rgba(255, 255, 255, 0.05);
   transform: translateY(-3px);
 }
+.sidebar-post-btn {
+  width: 100%;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  margin-top: 10px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: left;
+  background: #2d79f3;
+  color: white;
+  box-shadow: 0 8px 20px rgba(45, 121, 243, 0.25);
+  transition: all 0.25s ease;
+}
 
+.sidebar-post-btn:hover {
+  background: #256de0;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(45, 121, 243, 0.35);
+}
+
+.sidebar-post-btn:active {
+  transform: scale(0.98);
+  background: #1f63cf;
+}
+/* =======================
+   POST MODAL
+======================= */
+.post-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 18, 40, 0.7);
+  backdrop-filter: blur(8px);
+  display: none; /* hidden default */
+  align-items: center;
+  justify-content: center;
+  z-index: 999999;
+  padding: 20px;
+}
+
+.post-modal.active {
+  display: flex; /* muncul saat diklik */
+}
+
+.post-modal-content {
+  width: 100%;
+  max-width: 480px;
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 24px;
+  position: relative;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.22);
+  animation: postPop 0.25s ease;
+}
+
+@keyframes postPop {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.post-close-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(45, 121, 243, 0.12);
+  color: #2d79f3;
+  font-size: 24px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.post-close-btn:hover {
+  background: #2d79f3;
+  color: #fff;
+}
+
+.post-modal-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1b2b4b;
+  margin-bottom: 6px;
+}
+
+.post-modal-subtitle {
+  font-size: 14px;
+  color: #6b7a99;
+  margin-bottom: 20px;
+}
+
+.post-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.post-upload-area {
+  border: 2px dashed rgba(45, 121, 243, 0.35);
+  border-radius: 18px;
+  background: rgba(45, 121, 243, 0.05);
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+  transition: 0.25s ease;
+}
+
+.post-upload-area:hover {
+  border-color: #2d79f3;
+  background: rgba(45, 121, 243, 0.08);
+}
+
+.post-upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #2d79f3;
+  font-weight: 600;
+  text-align: center;
+  width: 100%;
+  height: 100%;
+}
+
+.post-upload-text {
+  font-size: 16px;
+  font-weight: 700;
+  color: #2d79f3;
+}
+
+.post-upload-placeholder small {
+  font-size: 12px;
+  color: #7a8aa8;
+  font-weight: 500;
+}
+
+.post-preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  max-height: 320px;
+  display: block;
+}
+
+.post-textarea {
+  width: 100%;
+  min-height: 110px;
+  resize: none;
+  border: 1.5px solid #d9e6ff;
+  border-radius: 16px;
+  padding: 14px 16px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  outline: none;
+  color: #1b2b4b;
+  transition: 0.2s ease;
+}
+
+.post-textarea:focus {
+  border-color: #2d79f3;
+  box-shadow: 0 0 0 4px rgba(45, 121, 243, 0.12);
+}
+
+.post-select {
+  width: 100%;
+  border: 1.5px solid #d9e6ff;
+  border-radius: 14px;
+  padding: 14px 16px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  outline: none;
+  background: #fff;
+  color: #1b2b4b;
+}
+
+.post-select:focus {
+  border-color: #2d79f3;
+  box-shadow: 0 0 0 4px rgba(45, 121, 243, 0.12);
+}
+
+.post-submit-btn {
+  border: none;
+  outline: none;
+  background: #2d79f3;
+  color: white;
+  font-family: 'Poppins', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 15px;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: 0.25s ease;
+  box-shadow: 0 12px 24px rgba(45, 121, 243, 0.22);
+}
+
+.post-submit-btn:hover {
+  background: #256de0;
+  transform: translateY(-2px);
+}
+
+.post-submit-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+/* =======================
+   POST MODAL - CLEAN HUMAN STYLE
+======================= */
+.post-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 999999;
+  padding: 20px;
+}
+
+.post-modal.active {
+  display: flex;
+}
+
+.post-modal-content {
+  width: 100%;
+  max-width: 460px;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 22px;
+  position: relative;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+  animation: postFadeUp 0.18s ease;
+}
+
+@keyframes postFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.post-close-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 20px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.post-close-btn:hover {
+  background: #e2e8f0;
+}
+
+.post-modal-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 4px;
+}
+
+.post-modal-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 18px;
+  line-height: 1.5;
+}
+
+.post-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.post-upload-area {
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 14px;
+  background: #f8fafc;
+  min-height: 190px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+  transition: 0.2s ease;
+}
+
+.post-upload-area:hover {
+  border-color: #2d79f3;
+  background: #f1f6ff;
+}
+
+.post-upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+  padding: 20px;
+}
+
+.post-upload-text {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.post-upload-placeholder small {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.post-preview-image {
+  width: 100%;
+  height: 100%;
+  max-height: 300px;
+  object-fit: cover;
+  display: block;
+}
+
+.post-textarea {
+  width: 100%;
+  min-height: 100px;
+  resize: none;
+  border: 1px solid #dbe2ea;
+  border-radius: 12px;
+  padding: 13px 14px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  outline: none;
+  color: #0f172a;
+  background: #fff;
+  transition: 0.2s ease;
+}
+
+.post-textarea::placeholder {
+  color: #94a3b8;
+}
+
+.post-textarea:focus {
+  border-color: #2d79f3;
+  box-shadow: 0 0 0 3px rgba(45, 121, 243, 0.12);
+}
+
+.post-select {
+  width: 100%;
+  border: 1px solid #dbe2ea;
+  border-radius: 12px;
+  padding: 13px 14px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  outline: none;
+  background: #fff;
+  color: #0f172a;
+  transition: 0.2s ease;
+}
+
+.post-select:focus {
+  border-color: #2d79f3;
+  box-shadow: 0 0 0 3px rgba(45, 121, 243, 0.12);
+}
+
+.post-submit-btn {
+  border: none;
+  background: #2d79f3;
+  color: #fff;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.post-submit-btn:hover {
+  background: #256de0;
+}
+
+.post-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+  .post-modal {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .post-modal-content {
+    max-width: 100%;
+    width: 100%;
+    border-radius: 18px 18px 0 0;
+    padding: 20px 16px;
+  }
+
+  .post-upload-area {
+    min-height: 170px;
+  }
+}
+/* =========================================
+   CUSTOM DROPUP CATEGORY - DARK THEME
+   ========================================= */
+
+/* Container utama untuk mengatur posisi */
+.custom-select-container {
+  position: relative;
+  width: 100%;
+  margin: 15px 0;
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Tombol pemicu (Box yang diklik) */
+.select-trigger {
+  width: 100%;
+  background: #1a1a1a; /* Hitam elegan */
+  color: #ffffff;
+  padding: 14px 18px;
+  border: 1px solid #333;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.select-trigger:hover {
+  background: #242424;
+  border-color: #2d79f3; /* Glow biru tipis saat hover */
+}
+
+/* Icon Panah (Segitiga kecil) */
+.arrow-icon {
+  font-size: 12px;
+  color: #888;
+  transition: transform 0.3s ease;
+}
+
+/* Efek saat dropdown terbuka (Class .active) */
+.custom-select-container.active .select-trigger {
+  border-color: #2d79f3;
+  box-shadow: 0 0 0 3px rgba(45, 121, 243, 0.15);
+}
+
+.custom-select-container.active .arrow-icon {
+  transform: rotate(180deg); /* Panah berputar saat buka */
+}
+
+/* =========================================
+   LIST PILIHAN (MENU KE ATAS)
+   ========================================= */
+
+.select-options-list {
+  /* SEMBUNYI DEFAULT */
+  display: none !important; 
+  
+  position: absolute;
+  bottom: calc(100% + 10px); /* Kuncinya di sini agar muncul ke ATAS */
+  left: 0;
+  right: 0;
+  
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 14px;
+  z-index: 999999; /* Pastikan paling depan */
+  
+  max-height: 220px;
+  overflow-y: auto;
+  box-shadow: 0 -12px 30px rgba(0,0,0,0.6); /* Shadow mengarah ke atas */
+  padding: 6px;
+  box-sizing: border-box;
+}
+
+/* Tampilkan HANYA saat parent (.custom-select-container) punya class .active */
+.custom-select-container.active .select-options-list {
+  display: block !important;
+  animation: dropUpAnim 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Item di dalam list */
+.option-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  color: #ccc;
+  cursor: pointer;
+  border-radius: 10px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  margin-bottom: 2px;
+}
+
+.option-item:last-child {
+  margin-bottom: 0;
+}
+
+/* Hover pada pilihan */
+.option-item:hover {
+  background: #2d79f3;
+  color: #fff;
+}
+
+/* Item yang sedang dipilih */
+.option-item.selected {
+  background: rgba(45, 121, 243, 0.15);
+  color: #2d79f3;
+  font-weight: 600;
+}
+
+/* Penanda Checkmark (Opsional jika lo pakai icon) */
+.option-item.selected::after {
+  content: '✓';
+  font-size: 12px;
+}
+
+/* =========================================
+   ANIMASI & SCROLLBAR
+   ========================================= */
+
+@keyframes dropUpAnim {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Custom Scrollbar biar nggak kaku */
+.select-options-list::-webkit-scrollbar {
+  width: 5px;
+}
+
+.select-options-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.select-options-list::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 10px;
+}

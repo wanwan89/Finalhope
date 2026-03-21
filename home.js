@@ -986,10 +986,22 @@ async function loadNotificationList() {
       const bgRead = isDark ? "#363b5e" : "#ffffff";
       const borderColor = n.is_read ? (isDark ? "#444b75" : "#f0f0f0") : "rgba(29,161,242,0.2)";
       const textColor = isDark ? "#eeeeee" : "#333333";
+      
+      // FIX: Ambil tipe dengan lowercase agar matching case-insensitive
+      const type = n.type ? n.type.toLowerCase() : "";
 
-      // Pilih Ikon & Warna berdasarkan tipe
-      let iconName = n.type === "like" ? "favorite" : n.type === "comment" ? "chat_bubble" : n.type === "follow" ? "person_add" : "notifications";
-      let iconColor = n.type === "like" ? "#FF3040" : n.type === "comment" ? "#00D084" : n.type === "follow" ? "#9b59b6" : "#1DA1F2";
+      let iconName = type === "like" ? "favorite" : 
+                     type === "comment" ? "chat_bubble" : 
+                     type === "follow" ? "person_add" : 
+                     type === "withdraw" ? "payments" : "notifications";
+
+      let iconColor = type === "like" ? "#FF3040" : 
+                      type === "comment" ? "#00D084" : 
+                      type === "follow" ? "#9b59b6" : 
+                      type === "withdraw" ? "#f09f33" : "#1DA1F2";
+
+      // Tambahkan format waktu sederhana
+      const time = n.created_at ? new Date(n.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
 
       Object.assign(li.style, {
         padding: "14px", marginBottom: "10px", borderRadius: "18px", cursor: "pointer",
@@ -1006,36 +1018,41 @@ async function loadNotificationList() {
           <p style="margin:0; font-size:12px; color:${textColor}; line-height:1.4; font-weight:500;">
             ${n.message}
           </p>
+          <span style="font-size:10px; color:#888; margin-top:4px; display:block;">${time}</span>
         </div>
         ${!n.is_read ? '<div style="width:6px; height:6px; background:#1DA1F2; border-radius:50%;"></div>' : ''}
       `;
 
-      // Logika Klik (Redirect ke Profil atau Post)
       li.onclick = async () => {
         try {
           await db.from("notifications").update({ is_read: true }).eq("id", n.id);
           
-          if (n.type === "follow") {
-            // Ambil username dari tabel profiles menggunakan ID yang ada di n.post_id
-            const { data: prof } = await db.from("profiles").select("username").eq("id", n.post_id).single();
-            if (prof && prof.username) {
-              window.location.href = `data.html?id=${prof.username}`;
-            } else {
-              console.error("Profil tidak ditemukan");
-            }
-          } else {
-            // Jika like/comment, pergi ke halaman post
-            window.location.href = "post.html?id=" + n.post_id;
+          // Gunakan variabel 'type' yang sudah di-lowercase untuk switch
+          switch (type) {
+            case "follow":
+              const { data: prof } = await db.from("profiles").select("username").eq("id", n.post_id).single();
+              if (prof?.username) window.location.href = `data.html?id=${prof.username}`;
+              break;
+            case "withdraw":
+              window.location.href = "saldo.html";
+              break;
+            default:
+              if (n.post_id) {
+                  window.location.href = `post.html?id=${n.post_id}`;
+              } else {
+                  closeNotif(); 
+              }
+              break;
           }
-        } catch (e) {
-          console.error("Redirect error:", e);
+        } catch (e) { 
+          console.error("Redirect error:", e); 
         }
       };
 
       container.appendChild(li);
-    }); // Tutup forEach
-  } catch (err) {
-    console.error("loadNotificationList error:", err);
+    });
+  } catch (err) { 
+    console.error("loadNotificationList error:", err); 
   }
 }
 
@@ -1057,21 +1074,15 @@ async function subscribeNotifications() {
       }, async (payload) => {
         if (!notificationsPaused) {
           await loadUnreadNotifications();
-          showToast("Notifikasi Baru", payload.new.message.replace(/<[^>]*>/g, ''), "info");
+          // Gunakan regex buat bersihin pesan dari tag HTML untuk toast
+          const cleanMsg = payload.new.message.replace(/<[^>]*>/g, '');
+          showToast("Notifikasi Baru", cleanMsg, "info");
         }
       })
-      .on("postgres_changes", {
-        event: "INSERT",
-        schema: "public",
-        table: "followers", 
-        filter: `following_id=eq.${user.id}`, 
-      }, (payload) => {
-          loadUnreadNotifications();
-          showToast("Follower Baru! 👤", "Seseorang mulai mengikuti kamu.", "success");
-          createParticles(window.innerWidth / 2, 100); 
-      })
       .subscribe();
-  } catch (err) { console.error("Sub error:", err); }
+  } catch (err) { 
+    console.error("Sub error:", err); 
+  }
 }
 
 // ===== CLICK NOTIF BELL =====

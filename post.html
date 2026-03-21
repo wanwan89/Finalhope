@@ -6,30 +6,34 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="post.css">
+<link rel="stylesheet" href="toast.css">
+<script src="toast.js"></script>
 </head>
 <body>
+  
 
   <!-- SIDEBAR -->
-  <div class="sidebar">
-    <div class="sidebar-header">
-      <h2 class="sidebar-logo">Menu</h2>
-    </div>
-
-    <nav class="sidebar-nav">
-      <a href="#" class="nav-item active" data-category="all">All</a>
-      <a href="#" class="nav-item" data-category="karya">Karya</a>
-      <a href="#" class="nav-item" data-category="prestasi">Prestasi</a>
-      <a href="#" class="nav-item" data-category="photography">Photography</a>
-      <a href="#" class="nav-item" data-category="mountain">Mountain</a>
-
-      <hr class="nav-divider">
-
-      <a href="admin.html" class="nav-item" id="adminPanelBtn">Admin Panel</a>
-    </nav>
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sidebar-header">
+    <h2 class="sidebar-logo">Menu</h2>
   </div>
 
-  <!-- SEARCH -->
-  <div class="search-wrapper">
+  <nav class="sidebar-nav">
+    <a href="#" class="nav-item active" data-category="all">All</a>
+    <a href="#" class="nav-item" data-category="karya">Karya</a>
+    <a href="#" class="nav-item" data-category="prestasi">Prestasi</a>
+    <a href="#" class="nav-item" data-category="photography">Photography</a>
+    <a href="#" class="nav-item" data-category="mountain">Mountain</a>
+
+    <hr class="nav-divider">
+
+    <button type="button" class="sidebar-post-btn" id="openPostModalBtn">+ Post Karya</button>
+  </nav>
+</div>
+
+<!-- SEARCH -->
+<div class="search-wrapper">
     <div class="menu-toggle" id="mobileMenuBtn">
       <span></span>
       <span></span>
@@ -99,6 +103,55 @@
       </form>
     </div>
   </div>
+<div id="postModal" class="post-modal">
+  <div class="post-modal-content">
+    <button class="post-close-btn" id="closePostModalBtn">×</button>
+
+    <h2 class="post-modal-title">Upload Karya</h2>
+    <p class="post-modal-subtitle">Karya kamu akan dikirim untuk direview dulu ya</p>
+
+    <form id="postForm" class="post-form">
+      <div class="post-upload-area" id="postUploadArea">
+        <input type="file" id="postImageInput" accept="image/*" hidden />
+        
+        <div class="post-upload-placeholder" id="postUploadPlaceholder">
+          <span class="post-upload-text">Pilih foto karya</span>
+          <small>JPG, PNG, WEBP • Max 5MB</small>
+        </div>
+
+        <img id="postPreviewImage" class="post-preview-image" style="display:none;" alt="Preview karya" />
+      </div>
+
+      <textarea
+        id="postCaption"
+        class="post-textarea"
+        placeholder="Tulis caption karya kamu..."
+        maxlength="300"
+      ></textarea>
+
+<div class="category-dropdown" id="categoryDropdown">
+  <div class="select-trigger">
+    <span id="selectedCategoryText">Pilih kategori</span>
+    <i class="arrow-icon">▼</i>
+  </div>
+  
+  <div class="options-container">
+    <div class="option-item" data-value="Karya">Karya</div>
+    <div class="option-item" data-value="Prestasi">Prestasi</div>
+    <div class="option-item" data-value="Photography">Photography</div>
+    <div class="option-item" data-value="Mountain">Mountain</div>
+  </div>
+  
+  <input type="hidden" id="postCategory" name="category">
+</div>
+
+
+      <button type="submit" id="submitPostBtn" class="post-submit-btn">
+        Kirim ke Review
+      </button>
+    </form>
+  </div>
+</div>
 <div id="giftSheet" class="gift-sheet">
   <div class="gift-sheet-overlay" onclick="closeGiftSheet()"></div>
   
@@ -173,6 +226,7 @@
     </div>
   </div>
 </div>
+
 <div id="bigImageContainer" style="
   display: none;
   position: fixed;
@@ -208,6 +262,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- MAIN JS -->
+
   <script src="post.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
