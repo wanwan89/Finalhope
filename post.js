@@ -170,115 +170,115 @@ async function fetchPosts(category = "all") {
   const gallery = document.getElementById("mainGallery");
   if (!gallery) return;
 
-  gallery.innerHTML =
-    '<div style="color:white; text-align:center; grid-column:1/-1; padding:50px;">Memuat karya...</div>';
+  // 1. Tampilkan Skeleton Loading biar cakep
+  gallery.innerHTML = `
+    <div class="skeleton-wrapper" style="grid-column: 1/-1; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; width: 100%;">
+      ${Array(6).fill(0).map(() => `
+        <div class="skeleton-card">
+          <div class="skeleton-shimmer"></div>
+        </div>
+      `).join('')}
+    </div>
+  `;
 
   try {
+    // 2. Query Supabase (Tarik Post + Role Profile si pembuat)
     let query = supabaseClient
-  .from("posts")
-  .select("*")
-  .eq("status", "approved");
+      .from("posts")
+      .select(`
+        *,
+        profiles!inner (
+          username,
+          role,
+          avatar_url
+        )
+      `)
+      .eq("status", "approved");
 
-    if (category !== "all") {
-      query = query.eq("category", category);
-    }
+    if (category !== "all") query = query.eq("category", category);
 
     const { data: posts, error } = await query.order("created_at", { ascending: false });
     if (error) throw error;
 
+    // Jeda dikit biar transisi skeleton ke konten smooth
+    await new Promise(resolve => setTimeout(resolve, 600));
     gallery.innerHTML = "";
 
     if (!posts || posts.length === 0) {
-      gallery.innerHTML =
-        '<p style="color:gray; text-align:center; grid-column:1/-1; padding:50px;">Tidak ada postingan di kategori ini.</p>';
+      gallery.innerHTML = '<p style="color:gray; text-align:center; grid-column:1/-1; padding:50px;">Tidak ada postingan.</p>';
       return;
     }
 
+    // 3. Looping Render Postingan
     posts.forEach((post) => {
       const card = document.createElement("div");
-      card.className = "card";
-      card.dataset.creator = post.creator_id;
+      card.className = "card post-fade-in"; 
+      
+      // --- LOGIKA VERIFIKASI (SISTEM BELI ROLE) ---
+      // Ambil role dari profile, paksa ke lowercase dan bersihkan spasi
+      const userRole = (post.profiles?.role || "user").toLowerCase().trim();
+      
+      // DAFTAR ROLE SULTAN (Hanya ini yang boleh dapet centang)
+      const roleBerhakCentang = ["verified", "crown1", "crown2", "crown3"];
+      
+      let verifiedBadge = "";
+      // CEK: Jika role ada di daftar DAN bukan 'user'
+      if (userRole !== "user" && roleBerhakCentang.includes(userRole)) {
+        verifiedBadge = `
+          <span class="verified" style="margin-left: 5px; display: inline-flex; align-items: center;">
+            <svg width="16" height="16" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" fill="#1DA1F2"/>
+              <path d="M7 12.5l3 3 7-7" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>`;
+      }
+      // --------------------------------------------
 
       const dateObj = new Date(post.created_at);
       const formattedDate = dateObj.toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
+        day: "numeric", month: "long", year: "numeric",
       });
 
       card.innerHTML = `
         <div class="slider">
-          <img src="${post.image_url || "karya.png"}" class="active">
-
-          <div class="watermark-overlay">
-            <img src="watermark.svg" alt="watermark">
+          <img src="${post.image_url || "karya.png"}" class="active" loading="lazy">
+          <div class="watermark-overlay"><img src="watermark.svg" alt="watermark"></div>
+        </div>
+        <div class="overlay">
+          <h2 class="name" onclick="window.location.href='data.html?id=${post.creator_id}'" style="cursor:pointer; display:flex; align-items:center;">
+            ${post.profiles?.username || post.name || "User"}
+            ${verifiedBadge} 
+          </h2>
+          <p class="bio">${post.bio || ""}</p>
+          <div class="post-date-wrapper" style="margin-bottom: 8px;">
+            <span style="font-size: 11px; color: rgba(255,255,255,0.6); font-weight: 400;">Diunggah pada ${formattedDate}</span>
+          </div>
+          <div class="actions">
+            <a href="linda.html?id=${post.creator_id}" class="primary">Detail</a>
+            <div class="engagement-group">
+               <button class="icon-btn gift-btn" data-post="${post.id}" data-creator="${post.creator_id}" data-name="${post.profiles?.username || post.name}"><svg viewBox="0 0 24 24" class="icon"><path d="M20 7h-2.18A3 3 0 0 0 12 3a3 3 0 0 0-5.82 4H4a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h1v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8h1a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1Zm-8-2a1 1 0 0 1 1 1v1h-2V6a1 1 0 0 1 1-1Zm-4 1a1 1 0 0 1 2 0v1H8a1 1 0 0 1 0-2Zm9 13h-4v-7h4Zm-6 0H7v-7h4Zm8-9H5V9h14Z"/></svg></button>
+               <button class="icon-btn like-btn" data-post="${post.id}"><svg viewBox="0 0 24 24" class="icon heart"><path d="M12.1 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3 9.24 3 10.91 3.81 12 5.09 13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5 22 12.28 18.6 15.36 13.55 20.04z"/></svg><span class="like-count">0</span></button>
+               <button class="icon-btn comment-toggle" data-post="${post.id}"><svg viewBox="0 0 24 24" class="icon"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg><span class="comment-count">0</span></button>
+            </div>
           </div>
         </div>
-
-        <div class="overlay">
-          <h2 class="name" onclick="window.location.href='data.html?id=${post.creator_id}'">
-            ${post.name || post.creator_id}
-            <span class="verified">
-              <svg width="16" height="16" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="10" fill="#1DA1F2"/>
-                <path d="M7 12.5l3 3 7-7" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </span>
-          </h2>
-
-          <p class="bio">${post.bio || ""}</p>
-
-          <div class="post-date-wrapper" style="margin-bottom: 8px;">
-            <span style="font-size: 11px; color: rgba(255,255,255,0.6); font-weight: 400;">
-              Diunggah pada ${formattedDate}
-            </span>
-          </div>
-
-          <div class="actions">
-  <a href="linda.html?id=${post.creator_id}" class="primary">Detail</a>
-
-  <div class="engagement-group">
-   <button class="icon-btn gift-btn" 
-  data-post="${post.id}" 
-  data-creator="${post.creator_id}"
-  data-name="${post.name || post.creator_id}">
-      <svg viewBox="0 0 24 24" class="icon gift-icon">
-        <path d="M20 7h-2.18A3 3 0 0 0 12 3a3 3 0 0 0-5.82 4H4a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h1v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8h1a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1Zm-8-2a1 1 0 0 1 1 1v1h-2V6a1 1 0 0 1 1-1Zm-4 1a1 1 0 0 1 2 0v1H8a1 1 0 0 1 0-2Zm9 13h-4v-7h4Zm-6 0H7v-7h4Zm8-9H5V9h14Z"/>
-      </svg>
-      <span class="gift-label"></span>
-    </button>
-
-    <button class="icon-btn like-btn" data-post="${post.id}">
-      <svg viewBox="0 0 24 24" class="icon heart">
-        <path d="M12.1 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3 9.24 3 10.91 3.81 12 5.09 13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5 22 12.28 18.6 15.36 13.55 20.04z"/>
-      </svg>
-      <span class="like-count">0</span>
-    </button>
-
-    <button class="icon-btn comment-toggle" data-post="${post.id}">
-      <svg viewBox="0 0 24 24" class="icon comment-icon">
-        <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/>
-      </svg>
-      <span class="comment-count">0</span>
-    </button>
-  </div>
-</div>
       `;
-
       gallery.appendChild(card);
     });
 
-    initGiftButtons();
-initLikeButtons();
-initComments();
-loadLikes();
-loadCommentCounts();
+    // Re-init interaksi
+    initGiftButtons(); 
+    initLikeButtons(); 
+    initComments(); 
+    loadLikes(); 
+    loadCommentCounts();
+
   } catch (err) {
-    console.error("Gagal memuat data:", err.message);
-    gallery.innerHTML =
-      '<p style="color:red; text-align:center; grid-column:1/-1; padding:50px;">Gagal memuat postingan.</p>';
+    console.error("Fetch Error:", err.message);
+    gallery.innerHTML = '<p style="color:red; text-align:center; grid-column:1/-1;">Gagal memuat data. Cek koneksi atau database.</p>';
   }
 }
+
 // =======================
 // GIFT SYSTEM
 // =======================
@@ -521,6 +521,8 @@ function initComments() {
   const list = modal.querySelector(".comment-list");
   const input = modal.querySelector(".comment-input");
   if (!list || !input) return;
+
+  // Inisialisasi tombol buka komen
   document.querySelectorAll(".comment-toggle").forEach((btn) => {
     const newBtn = btn.cloneNode(true);
     btn.parentNode.replaceChild(newBtn, btn);
@@ -532,59 +534,61 @@ function initComments() {
       }
 
       currentPostId = newBtn.dataset.post;
-
       modal.classList.add("active");
-      list.innerHTML =
-        "<li style='color:#aaa; text-align:center; padding:20px;'>Loading...</li>";
+      list.innerHTML = "<li style='color:#aaa; text-align:center; padding:20px;'>Loading...</li>";
 
       await loadCommentsStructured();
     });
   });
 
-    input.onkeydown = async (e) => {
+  // Logika tekan Enter untuk kirim/balas
+  input.onkeydown = async (e) => {
     if (e.key === "Enter" && input.value.trim()) {
+      e.preventDefault(); // Biar gak ganti baris
+
       const content = input.value.trim();
-      const savedReplyTo = replyTo;
+      const savedReplyTo = replyTo; // Ambil ID yang mau dibalas
       const savedReplyUsername = replyToUsername;
 
       input.value = "";
       input.placeholder = "Mengirim...";
 
-      // 1. Ambil Auth User yang Pasti (UUID)
-      const { data: { user } } = await supabaseClient.auth.getUser();
-      if (!user) return;
+      try {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) return;
 
-      const { error } = await supabaseClient.from("comments").insert({
-        post_id: currentPostId,
-        user_id: user.id, // Pake ID murni dari Auth
-        content,
-        parent_id: savedReplyTo ? parseInt(savedReplyTo) : null,
-        reply_to_username: savedReplyUsername || null,
-      });
+        // INSERT KE DATABASE
+        const { error } = await supabaseClient.from("comments").insert({
+          post_id: parseInt(currentPostId),
+          user_id: user.id,
+          content: content,
+          parent_id: savedReplyTo ? parseInt(savedReplyTo) : null,
+          reply_to_username: savedReplyUsername || null,
+        });
 
-      replyTo = null;
-      replyToUsername = null;
-      input.placeholder = "Tulis komentar...";
+        if (error) throw error;
 
-      if (!error) {
-        // 2. Ambil Creator ID post (buat tujuan notif)
+        // Reset state reply setelah sukses
+        replyTo = null;
+        replyToUsername = null;
+        input.placeholder = "Tulis komentar...";
+
+        // Ambil data untuk notifikasi
         const { data: postData } = await supabaseClient
           .from("posts")
           .select("creator_id")
           .eq("id", currentPostId)
           .single();
 
-        // 3. Ambil Username lo buat isi pesan
         const { data: senderProfile } = await supabaseClient
           .from("profiles")
           .select("username")
           .eq("id", user.id)
           .single();
 
-        // 4. Kirim Notif (Pake user.id murni)
         await createNotification({
           user_id: postData?.creator_id,
-          actor_id: user.id, // <--- INI PASTI UUID
+          actor_id: user.id,
           post_id: currentPostId,
           type: "comment",
           message: `${senderProfile?.username || "Seseorang"} mengomentari postingan Anda`,
@@ -592,33 +596,38 @@ function initComments() {
 
         await updateCommentCount(currentPostId);
         await loadCommentsStructured();
-      } else {
-        console.error("Gagal kirim komentar:", error.message);
+
+      } catch (err) {
+        console.error("Gagal kirim komentar:", err.message);
+        input.placeholder = "Gagal mengirim...";
+        setTimeout(() => { input.placeholder = "Tulis komentar..."; }, 2000);
       }
     }
   };
-}
+} // <--- Pastikan kurung penutup fungsi ini ada!
 
-function createComment(comment, isReply) {
+// Tambahkan parameter 'postOwnerId' di fungsi ini
+function createComment(comment, isReply, postOwnerId) {
   const div = document.createElement("div");
   div.className = isReply ? "comment-item reply" : "comment-item";
   const p = comment.profiles;
+  const commenterId = comment.user_id; // ID orang yang komen
+
+  // --- LOGIKA CREATOR BADGE ---
+  // Jika ID yang komen sama dengan ID yang punya postingan
+  const isPostOwner = commenterId === postOwnerId;
+  const creatorBadge = isPostOwner ? `<span style="background:#444; color:#eee; padding:2px 6px; border-radius:4px; font-size:9px; margin-left:5px; font-weight:800; border:1px solid #555; vertical-align:middle; display:inline-block;">CREATOR</span>` : "";
+  // ----------------------------
 
   let timeText = "";
   if (comment.created_at) {
     const now = new Date();
     const created = new Date(comment.created_at);
     const diffSec = Math.floor((now - created) / 1000);
-
-    if (diffSec < 60) {
-      timeText = `${diffSec}s`;
-    } else if (diffSec < 3600) {
-      timeText = `${Math.floor(diffSec / 60)}m`;
-    } else if (diffSec < 86400) {
-      timeText = `${Math.floor(diffSec / 3600)}j`;
-    } else {
-      timeText = `${created.getDate()}/${created.getMonth() + 1}`;
-    }
+    if (diffSec < 60) timeText = `${diffSec}s`;
+    else if (diffSec < 3600) timeText = `${Math.floor(diffSec / 60)}m`;
+    else if (diffSec < 86400) timeText = `${Math.floor(diffSec / 3600)}j`;
+    else timeText = `${created.getDate()}/${created.getMonth() + 1}`;
   }
 
   const profileLink = `data.html?id=${p?.username || ""}`;
@@ -636,7 +645,9 @@ function createComment(comment, isReply) {
         <span class="comment-username"
               onclick="window.location.href='${profileLink}'"
               style="cursor:pointer;">
-          ${p?.username || "User"} ${getUserBadge(p?.role)}
+          ${p?.username || "User"} 
+          ${getUserBadge(p?.role, true)} 
+          ${creatorBadge} 
         </span>
         <span class="comment-time">${timeText}</span>
       </div>
@@ -654,6 +665,7 @@ function createComment(comment, isReply) {
 
   return div;
 }
+
 
 function initReplyClick() {
   document.addEventListener("click", (e) => {
@@ -677,65 +689,65 @@ async function loadCommentsStructured() {
   const list = modal?.querySelector(".comment-list");
   if (!list || !currentPostId) return;
 
-  const { data, error } = await supabaseClient
-    .from("comments")
-    .select("*, profiles(username, avatar_url, role)")
-    .eq("post_id", currentPostId)
-    .order("created_at", { ascending: true });
+  try {
+    const [commentsRes, postRes] = await Promise.all([
+      supabaseClient.from("comments").select("*, profiles(username, avatar_url, role)").eq("post_id", currentPostId).order("created_at", { ascending: true }),
+      supabaseClient.from("posts").select("creator_id").eq("id", currentPostId).single()
+    ]);
 
-  if (error) {
-    list.innerHTML =
-      "<li style='text-align:center; padding:20px; color:red;'>Gagal memuat komentar.</li>";
-    console.error(error.message);
-    return;
+    if (commentsRes.error || postRes.error) throw new Error("Gagal load data");
+
+    const data = commentsRes.data;
+    const postOwnerId = postRes.data.creator_id;
+    list.innerHTML = "";
+
+    const parentComments = data.filter((c) => !c.parent_id);
+    const replies = data.filter((c) => c.parent_id);
+
+    parentComments.forEach((parent) => {
+      const wrap = document.createElement("div");
+      wrap.className = "comment-thread";
+      wrap.style.marginBottom = "15px";
+
+      // 1. Masukkan Komen Utama
+      wrap.appendChild(createComment(parent, false, postOwnerId));
+
+      // 2. Cek Balesan
+      const childReplies = replies.filter((r) => String(r.parent_id) === String(parent.id));
+      
+      if (childReplies.length > 0) {
+        // --- TOMBOL SEMBUNYIKAN/LIHAT BALESAN ---
+        const toggleBtn = document.createElement("div");
+        toggleBtn.className = "view-replies-btn";
+        toggleBtn.style.cssText = "margin-left: 55px; font-size: 11px; color: #aaa; cursor: pointer; padding: 5px 0; font-weight: bold;";
+        toggleBtn.innerHTML = `——— Lihat ${childReplies.length} balasan`;
+
+        const replyWrap = document.createElement("div");
+        replyWrap.className = "reply-group";
+        replyWrap.style.display = "none"; // SEMBUNYIKAN DEFAULT
+        
+        childReplies.forEach((reply) => {
+          replyWrap.appendChild(createComment(reply, true, postOwnerId));
+        });
+
+        // Event Klik buat buka/tutup
+        toggleBtn.addEventListener("click", () => {
+          const isHidden = replyWrap.style.display === "none";
+          replyWrap.style.display = isHidden ? "block" : "none";
+          toggleBtn.innerHTML = isHidden ? `——— Sembunyikan balasan` : `——— Lihat ${childReplies.length} balasan`;
+        });
+
+        wrap.appendChild(toggleBtn);
+        wrap.appendChild(replyWrap);
+      }
+      list.appendChild(wrap);
+    });
+
+    if (data.length === 0) list.innerHTML = "<li style='text-align:center; padding:20px; color:#aaa;'>Belum ada komentar.</li>";
+
+  } catch (err) {
+    console.error("Load Error:", err.message);
   }
-
-  if (!data || data.length === 0) {
-    list.innerHTML =
-      "<li style='text-align:center; padding:20px; color:#aaa;'>Belum ada komentar.</li>";
-    return;
-  }
-
-  list.innerHTML = "";
-
-  const parentComments = data.filter((c) => !c.parent_id);
-  const replies = data.filter((c) => c.parent_id);
-
-  parentComments.forEach((parent) => {
-    const wrap = document.createElement("div");
-    wrap.className = "comment-thread";
-
-    wrap.appendChild(createComment(parent, false));
-
-    const childReplies = replies.filter((r) => r.parent_id == parent.id);
-
-    if (childReplies.length > 0) {
-      const toggleBtn = document.createElement("div");
-      toggleBtn.className = "view-replies-btn";
-      toggleBtn.textContent = `Lihat balasan (${childReplies.length})`;
-
-      const replyWrap = document.createElement("div");
-      replyWrap.className = "reply-group";
-      replyWrap.style.display = "none";
-
-      childReplies.forEach((reply) => {
-        replyWrap.appendChild(createComment(reply, true));
-      });
-
-      toggleBtn.addEventListener("click", () => {
-        const isHidden = replyWrap.style.display === "none";
-        replyWrap.style.display = isHidden ? "block" : "none";
-        toggleBtn.textContent = isHidden
-          ? "Sembunyikan balasan"
-          : `Lihat balasan (${childReplies.length})`;
-      });
-
-      wrap.appendChild(toggleBtn);
-      wrap.appendChild(replyWrap);
-    }
-
-    list.appendChild(wrap);
-  });
 }
 
 // =======================
@@ -887,21 +899,39 @@ function protectAdminUI() {
   }
 }
 
-function getUserBadge(role) {
-  if (role === "admin") {
-    return `<span class="admin-badge" style="background:#ff4757; color:white; padding:2px 8px; border-radius:4px; font-size:10px; margin-left:5px; font-weight:bold;">🛡 Dev</span>`;
+function getUserBadge(role, isComment = false) {
+  let badge = "";
+  const r = (role || "user").toLowerCase().trim();
+
+  // 1. Logic buat ADMIN (Muncul di mana aja)
+  if (r === "admin") {
+    badge += `<span class="admin-badge" style="background: #ff4757; color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; margin-left: 5px; display: inline-flex; align-items: center; vertical-align: middle; line-height: 1; font-weight: bold; height: 16px;">🛡 Dev</span>`;
   }
 
-  if (role === "verified") {
-    return `<span class="verified-badge" style="margin-left:5px;">
-      <svg width="14" height="14" viewBox="0 0 24 24" style="vertical-align:middle;">
-        <circle cx="12" cy="12" r="10" fill="#1DA1F2"/>
-        <path d="M7 12.5l3 3 7-7" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </span>`;
+  // 2. Logic buat CROWN (Hanya muncul GAMBAR di Komentar)
+  const crowBadges = {
+    crown1: "crown1.png",
+    crown2: "crown2.png",
+    crown3: "crown3.png",
+  };
+
+  if (isComment && crowBadges[r]) {
+    // Di komentar muncul gambar PNG Crown
+    badge += `<img src="${crowBadges[r]}" style="width:18px;height:18px;margin-left:5px;vertical-align:middle;object-fit:contain;display:inline-block;" alt="${r}">`;
+  } 
+  else if (r === "verified" || (!isComment && crowBadges[r])) {
+    // DI POSTINGAN: Crown 1, 2, 3 dipaksa jadi Centang Biru
+    // DI KOMENTAR: Kalau cuma role 'verified', tetep centang biru
+    badge += `
+      <span class="verified-badge" style="margin-left:5px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" style="vertical-align:middle;">
+          <circle cx="12" cy="12" r="10" fill="#1DA1F2"/>
+          <path d="M7 12.5l3 3 7-7" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>`;
   }
 
-  return "";
+  return badge;
 }
 
 // =======================
@@ -983,44 +1013,48 @@ function resetReplyState() {
 }
 
 // =======================
-// REALTIME BASIC
+// REALTIME SYSTEM (UPDATED)
 // =======================
 function initRealtime() {
+  // 1. Monitor Komentar
   supabaseClient
     .channel("comments-live")
-    .on(
-      "postgres_changes",
-      {
-        event: "INSERT",
-        schema: "public",
-        table: "comments",
-      },
-      async (payload) => {
-        if (payload.new.post_id == currentPostId) {
-          await updateCommentCount(currentPostId);
-          await loadCommentsStructured();
-        } else {
-          await loadCommentCounts();
-        }
-      }
-    )
-    .subscribe();
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "comments" }, async (payload) => {
+        await updateCommentCount(payload.new.post_id);
+        if (payload.new.post_id == currentPostId) await loadCommentsStructured();
+    }).subscribe();
 
+  // 2. Monitor Like
   supabaseClient
     .channel("likes-live")
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "likes",
-      },
-      async () => {
+    .on("postgres_changes", { event: "*", schema: "public", table: "likes" }, async () => {
         await loadLikes();
-      }
-    )
-    .subscribe();
+    }).subscribe();
+
+  // 3. MONITOR PERUBAHAN PROFILE (Agresif Mode)
+  supabaseClient
+    .channel("profiles-role-update")
+    .on("postgres_changes", { event: "UPDATE", schema: "public", table: "profiles" }, (payload) => {
+        console.log("🔔 Profile Update Detected!", payload);
+        
+        // Ambil kategori yang lagi aktif sekarang
+        const activeNav = document.querySelector(".nav-item.active");
+        const currentCat = activeNav ? activeNav.getAttribute("data-category") : "all";
+        
+        // REFRESH POSTS LANGSUNG
+        // Kita kasih delay 300ms biar database kelar urusannya dulu
+        setTimeout(() => {
+          fetchPosts(currentCat);
+          
+          // Kalau user yang login adalah lo sendiri, update UI admin juga
+          if (currentUser && payload.new && payload.new.id === currentUser.id) {
+            currentUser.role = payload.new.role;
+            protectAdminUI();
+          }
+        }, 300);
+    }).subscribe();
 }
+
 function triggerGiftAnimation(giftImage) {
   const container = document.getElementById("giftAnimationContainer");
   if (!container) return;
@@ -1289,3 +1323,4 @@ async function handlePostSubmit(e) {
     }
   }
 }
+ 

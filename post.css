@@ -1993,31 +1993,33 @@ color:#fff;
    ========================================= */
 
 .select-options-list {
-  /* SEMBUNYI DEFAULT */
-  display: none !important; 
+  /* HAPUS !important DI SINI */
+  display: none; 
   
   position: absolute;
-  bottom: calc(100% + 10px); /* Kuncinya di sini agar muncul ke ATAS */
+  bottom: calc(100% + 10px); 
   left: 0;
   right: 0;
   
   background: #1a1a1a;
   border: 1px solid #333;
   border-radius: 14px;
-  z-index: 999999; /* Pastikan paling depan */
+  z-index: 999999; 
   
   max-height: 220px;
   overflow-y: auto;
-  box-shadow: 0 -12px 30px rgba(0,0,0,0.6); /* Shadow mengarah ke atas */
+  box-shadow: 0 -12px 30px rgba(0,0,0,0.6); 
   padding: 6px;
   box-sizing: border-box;
 }
 
-/* Tampilkan HANYA saat parent (.custom-select-container) punya class .active */
+/* Tampilkan saat parent aktif */
 .custom-select-container.active .select-options-list {
+  /* Kasih !important di sini saja supaya dia menang saat aktif */
   display: block !important;
   animation: dropUpAnim 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
+
 
 /* Item di dalam list */
 .option-item {
@@ -2084,3 +2086,75 @@ color:#fff;
   background: #444;
   border-radius: 10px;
 }
+/* Menghilangkan kotak biru/abu-abu saat elemen diklik di mobile */
+* {
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+}
+
+/* Khusus untuk tombol atau menu agar tidak ada outline saat difokuskan */
+.menu-item-tiktok, .btn, .tab, button {
+    -webkit-tap-highlight-color: rgba(0,0,0,0);
+    user-select: none; /* Biar teksnya nggak gak sengaja kepilih/keblok */
+}
+/* Container Skeleton */
+.skeleton-wrapper {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  width: 100%;
+}
+
+/* Base Style Skeleton Card */
+.skeleton-card {
+  background: #1a1a1a;
+  border-radius: 20px;
+  height: 400px; /* Samakan dengan tinggi .card kamu */
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #333;
+}
+
+/* Animasi Cahaya Lewat (Shimmer) */
+.skeleton-card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0,
+    rgba(255, 255, 255, 0.05) 20%,
+    rgba(255, 255, 255, 0.1) 60%,
+    rgba(255, 255, 255, 0)
+  );
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Detail di dalam skeleton */
+.skeleton-info {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+}
+
+.skeleton-text {
+  background: #333;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+.skeleton-name { width: 60%; height: 18px; }
+.skeleton-bio { width: 40%; height: 12px; }
+
+ 
