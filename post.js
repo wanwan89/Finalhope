@@ -164,30 +164,27 @@ if (typeof initGiftSheet === "function") safeInit("GiftSheet", initGiftSheet);
 });
 
 // =======================
-// FETCH POSTS
+// FETCH POSTS (VERSI FIX PROFIL)
 // =======================
 async function fetchPosts(category = "all") {
   const gallery = document.getElementById("mainGallery");
   if (!gallery) return;
 
-  // 1. Tampilkan Skeleton Loading biar cakep
   gallery.innerHTML = `
     <div class="skeleton-wrapper" style="grid-column: 1/-1; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; width: 100%;">
       ${Array(6).fill(0).map(() => `
-        <div class="skeleton-card">
-          <div class="skeleton-shimmer"></div>
-        </div>
+        <div class="skeleton-card"><div class="skeleton-shimmer"></div></div>
       `).join('')}
     </div>
   `;
 
   try {
-    // 2. Query Supabase (Tarik Post + Role Profile si pembuat)
     let query = supabaseClient
       .from("posts")
       .select(`
         *,
         profiles!inner (
+          id,
           username,
           role,
           avatar_url
@@ -200,7 +197,6 @@ async function fetchPosts(category = "all") {
     const { data: posts, error } = await query.order("created_at", { ascending: false });
     if (error) throw error;
 
-    // Jeda dikit biar transisi skeleton ke konten smooth
     await new Promise(resolve => setTimeout(resolve, 600));
     gallery.innerHTML = "";
 
@@ -209,20 +205,14 @@ async function fetchPosts(category = "all") {
       return;
     }
 
-    // 3. Looping Render Postingan
     posts.forEach((post) => {
       const card = document.createElement("div");
       card.className = "card post-fade-in"; 
       
-      // --- LOGIKA VERIFIKASI (SISTEM BELI ROLE) ---
-      // Ambil role dari profile, paksa ke lowercase dan bersihkan spasi
       const userRole = (post.profiles?.role || "user").toLowerCase().trim();
-      
-      // DAFTAR ROLE SULTAN (Hanya ini yang boleh dapet centang)
       const roleBerhakCentang = ["verified", "crown1", "crown2", "crown3"];
       
       let verifiedBadge = "";
-      // CEK: Jika role ada di daftar DAN bukan 'user'
       if (userRole !== "user" && roleBerhakCentang.includes(userRole)) {
         verifiedBadge = `
           <span class="verified" style="margin-left: 5px; display: inline-flex; align-items: center;">
@@ -232,13 +222,13 @@ async function fetchPosts(category = "all") {
             </svg>
           </span>`;
       }
-      // --------------------------------------------
 
       const dateObj = new Date(post.created_at);
       const formattedDate = dateObj.toLocaleDateString("id-ID", {
         day: "numeric", month: "long", year: "numeric",
       });
 
+      // --- PERBAIKAN DI SINI: Pake post.creator_id bukan post.name ---
       card.innerHTML = `
         <div class="slider">
           <img src="${post.image_url || "karya.png"}" class="active" loading="lazy">
@@ -254,7 +244,7 @@ async function fetchPosts(category = "all") {
             <span style="font-size: 11px; color: rgba(255,255,255,0.6); font-weight: 400;">Diunggah pada ${formattedDate}</span>
           </div>
           <div class="actions">
-            <a href="linda.html?id=${post.creator_id}" class="primary">Detail</a>
+            <a href="data.html?id=${post.creator_id}" class="primary">Detail</a>
             <div class="engagement-group">
                <button class="icon-btn gift-btn" data-post="${post.id}" data-creator="${post.creator_id}" data-name="${post.profiles?.username || post.name}"><svg viewBox="0 0 24 24" class="icon"><path d="M20 7h-2.18A3 3 0 0 0 12 3a3 3 0 0 0-5.82 4H4a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h1v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8h1a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1Zm-8-2a1 1 0 0 1 1 1v1h-2V6a1 1 0 0 1 1-1Zm-4 1a1 1 0 0 1 2 0v1H8a1 1 0 0 1 0-2Zm9 13h-4v-7h4Zm-6 0H7v-7h4Zm8-9H5V9h14Z"/></svg></button>
                <button class="icon-btn like-btn" data-post="${post.id}"><svg viewBox="0 0 24 24" class="icon heart"><path d="M12.1 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3 9.24 3 10.91 3.81 12 5.09 13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5 22 12.28 18.6 15.36 13.55 20.04z"/></svg><span class="like-count">0</span></button>
@@ -266,7 +256,6 @@ async function fetchPosts(category = "all") {
       gallery.appendChild(card);
     });
 
-    // Re-init interaksi
     initGiftButtons(); 
     initLikeButtons(); 
     initComments(); 
@@ -275,7 +264,7 @@ async function fetchPosts(category = "all") {
 
   } catch (err) {
     console.error("Fetch Error:", err.message);
-    gallery.innerHTML = '<p style="color:red; text-align:center; grid-column:1/-1;">Gagal memuat data. Cek koneksi atau database.</p>';
+    gallery.innerHTML = '<p style="color:red; text-align:center; grid-column:1/-1;">Gagal memuat data.</p>';
   }
 }
 
@@ -630,7 +619,7 @@ function createComment(comment, isReply, postOwnerId) {
     else timeText = `${created.getDate()}/${created.getMonth() + 1}`;
   }
 
-  const profileLink = `data.html?id=${p?.username || ""}`;
+  const profileLink = `data.html?id=${p?.id || ""}`; 
 
   div.innerHTML = `
     <div class="comment-left">
@@ -691,9 +680,19 @@ async function loadCommentsStructured() {
 
   try {
     const [commentsRes, postRes] = await Promise.all([
-      supabaseClient.from("comments").select("*, profiles(username, avatar_url, role)").eq("post_id", currentPostId).order("created_at", { ascending: true }),
-      supabaseClient.from("posts").select("creator_id").eq("id", currentPostId).single()
-    ]);
+  // TAMBAHKAN 'id' DI SINI (profiles(id, ...))
+  supabaseClient
+    .from("comments")
+    .select("*, profiles(id, username, avatar_url, role)") 
+    .eq("post_id", currentPostId)
+    .order("created_at", { ascending: true }),
+
+  supabaseClient
+    .from("posts")
+    .select("creator_id")
+    .eq("id", currentPostId)
+    .single()
+]);
 
     if (commentsRes.error || postRes.error) throw new Error("Gagal load data");
 

@@ -648,105 +648,109 @@
     const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxZXRucW52bWR4ZGdmbm5sdWV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3MzUyODIsImV4cCI6MjA4NzMxMTI4Mn0.Cr9lDBZMqfeONi1dfyFzHpBtawBzZTQLBEWKmPJVAOA';
     const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
-        // --- PERBAIKAN DI SINI ---
-    let myId = null; 
-    let targetName = ""; 
-    let targetProfileId = null; 
-    
-    const urlParams = new URLSearchParams(window.location.search);
-    // Kita samakan namanya menjadi userParam agar cocok dengan fungsi di bawah
-    const userParam = urlParams.get('id'); 
+// --- VERSI YANG SUDAH FIX ---
+let myId = null; 
+let targetName = ""; 
+
+// Ambil ID dari URL langsung di sini
+const urlParams = new URLSearchParams(window.location.search);
+let targetProfileId = urlParams.get('id'); 
+
+// Ambil username dari URL (jika ada, buat jaga-jaga fallback)
+const userParam = urlParams.get('user'); 
+
 
 function getUserBadge(role) {
-    if(!role) return "";
-    let b = "";
-    
-    // Badge Dev (Merah Solid biar Kontras)
-    if(role.includes("admin")) {
-        b += `<span style="background:#ff4757; color:white; padding:2px 6px; border-radius:4px; font-size:10px; margin-left:4px; font-weight:bold; display:inline-flex; align-items:center; vertical-align:middle; line-height:1;">🛡 Dev</span>`;
+  if (!role) return ""; // Jaga-jaga kalau role kosong/null
+  let badge = "";
+
+  // Pakai .includes biar bisa deteksi banyak role sekaligus
+  if (role.includes("admin")) {
+    badge += `<span class="admin-badge" style="background: #ff4757; color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; margin-left: 5px; display: inline-flex; align-items: center; vertical-align: middle; line-height: 1; font-weight: bold; height: 16px;">🛡 Dev</span>`;
+  }
+
+  if (role.includes("verified")) {
+    badge += `
+      <span class="verified-badge" style="margin-left:5px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" style="vertical-align:middle; display:inline-block;">
+          <circle cx="12" cy="12" r="10" fill="#1DA1F2"/>
+          <path d="M7 12.5l3 3 7-7" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>`;
+  }
+
+  // List gambar crown (Pastikan path/lokasi filenya benar)
+  const crowBadges = {
+    crown1: "crown1.png",
+    crown2: "crown2.png",
+    crown3: "crown3.png",
+  };
+
+  // Cek apakah ada kata "crown" di dalam string role
+  Object.keys(crowBadges).forEach(key => {
+    if (role.includes(key)) {
+      badge += `<img src="${crowBadges[key]}" style="width:18px; height:18px; margin-left:5px; vertical-align:middle; object-fit:contain; display:inline-block;" alt="${key}">`;
     }
-    
-    // Badge Verified (Hanya Ikon, Tanpa Background Kotak)
-    if(role.includes("verified")) {
-        b += `<span style="margin-left:4px; display:inline-flex; align-items:center; vertical-align:middle;">
-                <svg width="15" height="15" viewBox="0 0 24 24" style="display:block;">
-                    <circle cx="12" cy="12" r="10" fill="#1DA1F2"/>
-                    <path d="M7 12.5l3 3 7-7" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </span>`;
-    }
-    return b;
+  });
+
+  return badge;
 }
 
-    async function loadProfile() {
-        try {
-            // 1. Ambil info user yang sedang login
-            const { data: { user } } = await supabaseClient.auth.getUser();
-            
-            // PENTING: Jangan pakai 'const' lagi di sini agar mengisi variabel global di atas
-            myId = user ? user.id : null; 
-            
-            // 2. Tentukan target username
-            if (userParam) {
-                targetName = userParam;
-            } else if (myId) {
-                const { data: myProf } = await supabaseClient
-                    .from('profiles')
-                    .select('username')
-                    .eq('id', myId)
-                    .maybeSingle();
-                targetName = myProf ? myProf.username : "hiilinda";
-            } else {
-                targetName = "hiilinda";
-            }
+async function loadProfile() {
+    try {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        myId = user ? user.id : null; 
+        
+        // Ambil ID atau Username dari URL
+        let searchParam = userParam; 
 
-            // 3. Ambil data profil target berdasarkan username
-            const { data: profile, error } = await supabaseClient
+        if (!searchParam && myId) {
+            const { data: myProf } = await supabaseClient
                 .from('profiles')
-                .select('*')
-                .eq('username', targetName)
+                .select('username')
+                .eq('id', myId)
                 .maybeSingle();
-
-            if (error) throw error;
-
-            // 4. Jika profil tidak ditemukan
-            if (!profile) {
-                const displayName = document.getElementById('view-display-name');
-                if (displayName) displayName.innerText = "User Tidak Ada";
-                return;
-            }
-
-            // 5. Simpan ID target ke variabel global
-            targetProfileId = profile.id;
-
-            // 6. Pasang data ke UI
-            if (document.getElementById('header-name')) 
-                document.getElementById('header-name').innerText = profile.username;
-            
-            if (document.getElementById('view-display-name')) 
-                document.getElementById('view-display-name').innerText = profile.username;
-                
-            if (document.getElementById('view-username')) 
-                document.getElementById('view-username').innerText = '@' + profile.username.toLowerCase().replace(/\s/g, '');
-                
-            if (document.getElementById('view-bio')) 
-                document.getElementById('view-bio').innerText = profile.bio || 'Belum ada bio.';
-                
-            if (profile.avatar_url && document.getElementById('view-avatar')) 
-                document.getElementById('view-avatar').src = profile.avatar_url;
-
-            const badgeCont = document.getElementById('badge-container');
-            if (badgeCont) badgeCont.innerHTML = getUserBadge(profile.role);
-
-            // 7. Jalankan fungsi pendukung
-            renderButtons(profile.id);
-            loadPosts('foto');
-            updateStats(profile.id, profile.username);
-
-        } catch (err) { 
-            console.error("Load Error:", err); 
+            searchParam = myProf?.username;
         }
+
+        // Jika tetap tidak ada, default ke user tertentu
+        targetName = searchParam || "hiilinda";
+
+        const { data: profile } = await supabaseClient
+  .from('profiles')
+  .select('*')
+  .eq('id', targetProfileId) // Pakai ID, bukan username
+  .single();
+
+        if (!profile) {
+            document.getElementById('view-display-name').innerText = "User Tidak Ditemukan";
+            return;
+        }
+
+        targetProfileId = profile.id;
+        targetName = profile.username; // Sinkronkan ulang dengan data asli DB
+
+        // Update UI
+        document.getElementById('header-name').innerText = profile.username;
+        document.getElementById('view-display-name').innerText = profile.username;
+        document.getElementById('view-username').innerText = '@' + profile.username.toLowerCase();
+        document.getElementById('view-bio').innerText = profile.bio || 'Belum ada bio.';
+        if (profile.avatar_url) document.getElementById('view-avatar').src = profile.avatar_url;
+
+        // Render Badge
+        const badgeCont = document.getElementById('badge-container');
+        if (badgeCont) badgeCont.innerHTML = getUserBadge(profile.role);
+
+        // Jalankan fungsi lainnya
+        renderButtons(profile.id);
+        updateStats(profile.id, profile.username);
+        loadPosts('foto'); // Panggil ini SETELAH targetName terisi pasti
+
+    } catch (err) { 
+        console.error("Load Error:", err); 
     }
+}
+
     // --- AKHIR PERBAIKAN ---
 
     async function updateStats(tId, tUsername) {
@@ -785,7 +789,7 @@ async function loadPosts(type) {
     const container = document.getElementById('post-container');
     if (!container) return;
     
-    // Ganti teks jadul dengan 6 kotak skeleton yang estetik
+    // 1. Tampilkan Skeleton Loading biar estetik
     container.innerHTML = `
         <div class="loading-wrapper" style="grid-column: span 3; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; width: 100%;">
             <div class="skeleton-loader"></div>
@@ -800,40 +804,52 @@ async function loadPosts(type) {
     try {
         let posts = [];
         
+        // --- LOGIKA AMBIL FOTO (POSTINGAN SENDIRI) ---
         if (type === 'foto') {
-            // Mengambil data dari tabel posts berdasarkan targetName
+            // Kita pake targetProfileId (UUID), bukan nama (targetName) 
+            // Biar gak error pas user ganti nama dari 'Riko' ke 'Nia Virda'
             const { data, error } = await supabaseClient
                 .from('posts')
                 .select('id, image_url, created_at')
-                .eq('name', targetName) 
+                .eq('creator_id', targetProfileId) // FILTER BERDASARKAN ID
+                .eq('status', 'approved')          // HANYA YANG SUDAH DI-ACC ADMIN
                 .order('created_at', { ascending: false });
             
             if (error) throw error;
             posts = data || [];
+
+        // --- LOGIKA LIKE / SIMPAN ---
         } else if (type === 'like' || type === 'simpan') {
             const table = type === 'like' ? 'likes' : 'bookmarks';
-            const { data: rels } = await supabaseClient
+            const { data: rels, error: relError } = await supabaseClient
                 .from(table)
                 .select('post_id')
                 .eq('user_id', targetProfileId);
                 
+            if (relError) throw relError;
+
             if (rels && rels.length > 0) {
-                const { data: pData } = await supabaseClient
+                const postIds = rels.map(r => r.post_id);
+                const { data: pData, error: pError } = await supabaseClient
                     .from('posts')
                     .select('id, image_url')
-                    .in('id', rels.map(r => r.post_id));
+                    .in('id', postIds)
+                    .eq('status', 'approved'); // Tetap filter status approved
+                
+                if (pError) throw pError;
                 posts = pData || [];
             }
         }
         
-        // Kasih delay dikit biar user sempat lihat animasinya (opsional)
+        // Kasih jeda dikit biar animasinya kelihatan (opsional)
         await new Promise(res => setTimeout(res, 500)); 
         
+        // Panggil fungsi renderGrid lo untuk nampilin gambarnya
         renderGrid(posts, container);
         
     } catch (err) {
-        console.error("Gagal memuat:", err);
-        container.innerHTML = '<div class="no-posts">Gagal memuat konten.</div>';
+        console.error("❌ Gagal memuat postingan:", err.message);
+        container.innerHTML = '<div class="no-posts" style="grid-column: span 3; text-align: center; padding: 40px; color: gray;">Gagal memuat konten. Cek koneksi atau database.</div>';
     }
 }
 
