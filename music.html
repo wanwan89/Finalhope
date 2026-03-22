@@ -12,27 +12,72 @@
 <body>
 
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
 <div class="sidebar" id="sidebar">
     <div class="sidebar-header">
         <h2> Menu</h2>
-        <span class="material-icons" id="closeSidebar">close</span>
+        <span class="material-icons" id="closeSidebar" style="cursor: pointer;">close</span>
     </div>
-<a href="#" class="nav-item" data-category="trending">
-    <span class="material-icons">trending_up</span> Trending
-</a>
-<a href="#" class="nav-item" data-category="viral">
-    <span class="material-icons">auto_awesome</span> Viral
-</a>
-<a href="#" class="nav-item" data-category="hot">
-    <span class="material-icons">whatshot</span> Hot
-</a>
-<hr style="border: 0.1px solid #333; margin: 15px 0;">
-
-<a href="adminmusic.html" id="adminPanelBtn" style="display: none;">
-    <span class="material-icons">admin_panel_settings</span> Admin Panel
-</a>
-
+    <a href="#" class="nav-item" data-category="trending">
+        <span class="material-icons">trending_up</span> Trending
+    </a>
+    <a href="#" class="nav-item" data-category="viral">
+        <span class="material-icons">auto_awesome</span> Viral
+    </a>
+    <a href="#" class="nav-item" data-category="hot">
+        <span class="material-icons">whatshot</span> Hot
+    </a>
 </div>
+
+
+<div id="openUploadModal" style="position: fixed; bottom: 100px; right: 20px; background: #1f3cff; color: white; width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+    <span class="material-icons">add</span>
+</div>
+
+<div id="uploadOverlay" class="comment-overlay" style="display: none; z-index: 1000;" onclick="closeUpload()"></div>
+<div id="uploadSheet" class="comment-sheet" style="z-index: 1001;">
+    <div class="drag-handle"></div>
+    <div class="sheet-header">
+        <div class="header-content">
+            <h3>Post Music ke HopeHype</h3>
+            <button onclick="closeUpload()"><span class="material-icons">close</span></button>
+        </div>
+    </div>
+    
+    <div style="padding: 20px; max-height: 80vh; overflow-y: auto;">
+        <input type="text" id="upTitle" placeholder="Judul Lagu" style="width: 100%; padding: 12px; margin-bottom: 10px; background: #1a1a1a; border: 1px solid #333; color: white; border-radius: 8px;">
+        <input type="text" id="upArtist" placeholder="Nama Artis" style="width: 100%; padding: 12px; margin-bottom: 15px; background: #1a1a1a; border: 1px solid #333; color: white; border-radius: 8px;">
+        
+        <label style="color: #888; font-size: 12px; display: block; margin-bottom: 5px;">File Musik (MP3)</label>
+        <div class="file-input-wrapper">
+            <label for="upAudioFile" class="custom-file-upload">
+                <span class="material-icons">audiotrack</span>
+                <span id="audioFileName">Pilih lagu favoritmu...</span>
+            </label>
+            <input type="file" id="upAudioFile" accept="audio/*" style="display:none;" onchange="updateAudioName(event)">
+        </div>
+
+        <label style="color: #888; font-size: 12px; display: block; margin-bottom: 5px;">Cover Gambar</label>
+        <div class="file-input-wrapper">
+            <label for="upCoverFile" class="custom-file-upload">
+                <span class="material-icons">image</span>
+                <span id="coverFileName">Pilih cover yang keren...</span>
+            </label>
+            <input type="file" id="upCoverFile" accept="image/*" style="display:none;" onchange="previewImage(event)">
+        </div>
+
+        <div id="previewContainer" style="display: none; margin-bottom: 20px; text-align: center;">
+            <img id="imagePreview" src="" style="width: 140px; height: 140px; object-fit: cover; border-radius: 15px; border: 2px solid #1f3cff; box-shadow: 0 0 20px rgba(31, 60, 255, 0.2);">
+            <p style="color: #666; font-size: 10px; margin-top: 8px;">Pratinjau Cover</p>
+        </div>
+
+        <button id="btnUpload" onclick="handleUploadMusik()" style="width: 100%; padding: 15px; background: #1f3cff; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
+            Publish ke HopeHype
+        </button>
+        <p id="uploadStatus" style="text-align: center; font-size: 12px; margin-top: 10px; color: #888;"></p>
+    </div>
+</div>
+
 
 <div class="header-container">
     <header class="music-header">
@@ -75,6 +120,25 @@
     </div>
     <div class="player-controls">
         <span class="material-icons" id="play-btn">play_arrow</span>
+    </div>
+</div>
+<div id="commentOverlay" class="comment-overlay" onclick="hideComments()"></div>
+
+<div id="commentSheet" class="comment-sheet">
+    <div class="drag-handle"></div>
+    <div class="sheet-header">
+        <div class="header-content">
+            <h3>Komentar</h3>
+            <button onclick="hideComments()"><span class="material-icons">close</span></button>
+        </div>
+    </div>
+    
+    <div id="commentList" class="comment-body">
+        </div>
+
+    <div class="comment-footer">
+        <input type="text" id="commentInput" placeholder="Tulis komentar...">
+        <button id="sendCommentBtn"><span class="material-icons">send</span></button>
     </div>
 </div>
 

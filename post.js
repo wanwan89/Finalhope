@@ -43,7 +43,8 @@ let giftState = {
   userCoins: 0,
   selectedAmount: 0,
 };
-
+ 
+ 
 // =======================
 // CREATE NOTIFICATION
 // =======================
