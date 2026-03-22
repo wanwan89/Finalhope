@@ -698,10 +698,10 @@ function getUserBadge(role) {
 
 async function loadProfile() {
     try {
-        const { data: { user } } = await supabaseClient.auth.getUser();
+        const { data } = await supabaseClient.auth.getUser();
+        const user = data?.user;
         myId = user ? user.id : null; 
         
-        // Ambil ID atau Username dari URL
         let searchParam = userParam; 
 
         if (!searchParam && myId) {
@@ -713,44 +713,46 @@ async function loadProfile() {
             searchParam = myProf?.username;
         }
 
-        // Jika tetap tidak ada, default ke user tertentu
         targetName = searchParam || "hiilinda";
 
-        const { data: profile } = await supabaseClient
-  .from('profiles')
-  .select('*')
-  .eq('id', targetProfileId) // Pakai ID, bukan username
-  .single();
+        // 🔥 QUERY FLEXIBLE
+        let query = supabaseClient.from('profiles').select('*');
 
-        if (!profile) {
+        if (targetProfileId) {
+            query = query.eq('id', targetProfileId);
+        } else if (userParam) {
+            query = query.eq('username', userParam);
+        } else {
+            query = query.eq('username', targetName);
+        }
+
+        const { data: profile, error } = await query.single();
+
+        if (!profile || error) {
             document.getElementById('view-display-name').innerText = "User Tidak Ditemukan";
             return;
         }
 
         targetProfileId = profile.id;
-        targetName = profile.username; // Sinkronkan ulang dengan data asli DB
+        targetName = profile.username;
 
-        // Update UI
         document.getElementById('header-name').innerText = profile.username;
         document.getElementById('view-display-name').innerText = profile.username;
         document.getElementById('view-username').innerText = '@' + profile.username.toLowerCase();
         document.getElementById('view-bio').innerText = profile.bio || 'Belum ada bio.';
         if (profile.avatar_url) document.getElementById('view-avatar').src = profile.avatar_url;
 
-        // Render Badge
         const badgeCont = document.getElementById('badge-container');
         if (badgeCont) badgeCont.innerHTML = getUserBadge(profile.role);
 
-        // Jalankan fungsi lainnya
         renderButtons(profile.id);
         updateStats(profile.id, profile.username);
-        loadPosts('foto'); // Panggil ini SETELAH targetName terisi pasti
+        loadPosts('foto');
 
     } catch (err) { 
         console.error("Load Error:", err); 
     }
 }
-
     // --- AKHIR PERBAIKAN ---
 
     async function updateStats(tId, tUsername) {
