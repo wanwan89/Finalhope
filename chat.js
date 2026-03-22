@@ -434,38 +434,60 @@ function renderMessage(msg) {
   const currentUsername = msg.profiles?.username || msg.username || "User";
   const avatarUrl = msg.profiles?.avatar_url || msg.avatar || "profile.png";
   const currentRole = msg.profiles?.role || msg.role || "user";
-  const sticker = msg.sticker_url;
   const statusIcon = msg.user_id === currentUser.id ? getStatusIcon(msg.status || 'sent') : "";
 
-  const replyHtml = msg.reply_to_msg ? `
-    <div class="reply-preview" onclick="scrollToMessage('${msg.reply_to_msg.id}')"
-         style="font-size:11px; color:#555; background:rgba(0,0,0,0.05); padding:5px; border-left:3px solid #0088cc; margin-bottom:5px; border-radius:4px; cursor:pointer;">
-      <strong>${escapeHtml(msg.reply_to_msg.username || "User")}</strong>: ${escapeHtml((msg.reply_to_msg.message || "").slice(0, 30))}...
-    </div>` : "";
+  // ✅ FIX 1: Logika teks reply di bubble chat (supaya ga kosong kalau reply stiker/VN)
+  let replyTextContent = msg.reply_to_msg?.message || "";
+  if (!replyTextContent && msg.reply_to_msg?.sticker_url) replyTextContent = "🖼 Stiker";
+  if (!replyTextContent && msg.reply_to_msg?.audio_url) replyTextContent = "🎤 Voice Note";
 
-  const contentHtml = sticker
-    ? `<img src="${sticker}" style="width:100px;height:100px;border-radius:12px;object-fit:cover;">`
-    : escapeHtml(msg.message || "");
+  const replyHtml = msg.reply_to_msg ? `
+  <div class="reply-preview-in-chat" 
+       onclick="window.scrollToMessage('${msg.reply_to_msg.id}')"
+       style="cursor:pointer; background:rgba(0,0,0,0.08); border-left:3px solid #0088cc; padding:5px 8px; border-radius:4px; margin-bottom:5px;">
+    <div style="font-size:10px; color:#0088cc; font-weight:bold;">
+      ${escapeHtml(msg.reply_to_msg.username)}
+    </div>
+    <div style="font-size:11px; color:#666; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+      ${escapeHtml(replyTextContent)}
+    </div>
+  </div>` : "";
+
+  // Konten Utama
+  let contentHtml = "";
+  if (msg.sticker_url) {
+    contentHtml = `<img src="${msg.sticker_url}" style="width:100px;height:100px;border-radius:12px;object-fit:cover;">`;
+  } else if (msg.audio_url) {
+    contentHtml = `
+      <div class="vn-custom-player">
+        <button class="vn-play-btn" onclick="playVN(this, '${msg.audio_url}')">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <div class="vn-waveform">
+          <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+          <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+          <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+          <span class="bar"></span>
+        </div>
+        <div class="vn-time">Voice Note</div>
+      </div>`;
+  } else {
+    contentHtml = escapeHtml(msg.message || "");
+  }
 
   msgEl.innerHTML = `
   <img class="avatar" src="${avatarUrl}" onerror="this.src='profile.png'">
   <div class="content" style="position: relative; min-width: 80px; transition: transform 0.2s ease;">
     <div class="username">${escapeHtml(currentUsername)}${getBadge(currentRole)}</div>
-
     ${replyHtml}
-
     <div class="text" style="${msg.message === 'Pesan ini telah dihapus' ? 'font-style:italic;color:#aaa;' : ''} padding-bottom: 12px;">
       ${contentHtml}
     </div>
-
     <div class="message-info" style="position: absolute; bottom: 4px; right: 8px; display:flex; align-items:center; gap:2px;">
-      <span class="timestamp" style="font-size:9px; opacity:0.5;">
-        ${formatTime(msg.created_at)}
-      </span>
+      <span class="timestamp" style="font-size:9px; opacity:0.5;">${formatTime(msg.created_at)}</span>
       ${statusIcon}
     </div>
-  </div>
-`;
+  </div>`;
 
   // ===== Swipe to Reply =====
   let startX = 0;
@@ -478,23 +500,20 @@ function renderMessage(msg) {
     currentX = startX;
     swiping = true;
     if (contentEl) contentEl.style.transition = "none";
-  });
+  }, { passive: true });
 
   msgEl.addEventListener("touchmove", (e) => {
     if (!swiping || !contentEl) return;
-
     currentX = e.touches[0].clientX;
     let diff = currentX - startX;
-
     if (diff > 0) {
       if (diff > 70) diff = 70;
       contentEl.style.transform = `translateX(${diff}px)`;
     }
-  });
+  }, { passive: true });
 
   msgEl.addEventListener("touchend", () => {
     if (!contentEl) return;
-
     let diff = currentX - startX;
     contentEl.style.transition = "transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28)";
     contentEl.style.transform = "translateX(0)";
@@ -505,6 +524,11 @@ function renderMessage(msg) {
 
       const replyBox = document.getElementById("reply-preview-box");
       if (replyBox) {
+        // ✅ FIX 2: Cek tipe pesan buat preview di atas input
+        let previewText = msg.message;
+        if (msg.sticker_url) previewText = "🖼 Stiker";
+        if (msg.audio_url) previewText = "🎤 Voice Note";
+
         replyBox.style.display = "flex";
         replyBox.style.justifyContent = "space-between";
         replyBox.style.alignItems = "center";
@@ -515,19 +539,17 @@ function renderMessage(msg) {
           <div style="flex: 1; overflow: hidden;">
             <div style="font-size: 11px; color: #0088cc; font-weight: bold;">Membalas ${escapeHtml(currentUsername)}</div>
             <div style="font-size: 12px; color: #666; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
-              ${sticker ? "🖼 Stiker" : escapeHtml(msg.message || "")}
+              ${escapeHtml(previewText || "")}
             </div>
           </div>
           <div onclick="window.cancelReply()" style="padding: 5px 10px; cursor: pointer; color: #ff4757; font-size: 24px; font-weight: bold;">
             &times;
-          </div>
-        `;
+          </div>`;
       }
 
       if (inputEl) inputEl.focus();
       if (navigator.vibrate) navigator.vibrate(30);
     }
-
     swiping = false;
     currentX = 0;
   });
@@ -652,31 +674,53 @@ async function markRoomAsRead() {
 
 // ===== Send Message =====
 async function Message() {
-  const text = inputEl?.value.trim();
+  const text = chatInput?.value.trim(); 
   if (!text || !currentUser) return;
 
-  const replyTo = inputEl.dataset.replyTo || null;
+  const replyTo = chatInput.dataset.replyTo || null;
   const tempId = "temp-" + Date.now();
-  const nowIso = new Date().toISOString();
 
+  // 🔥 AMBIL DATA REPLY (INI YANG KURANG TADI)
+  let replyData = null;
+
+  if (replyTo) {
+    const repliedEl = document.getElementById(`msg-${replyTo}`);
+    if (repliedEl) {
+      const username = repliedEl.querySelector('.username')?.innerText || "User";
+      const message = repliedEl.querySelector('.text')?.innerText || "";
+
+      replyData = {
+        id: replyTo,
+        username: username,
+        message: message
+      };
+    }
+  }
+
+  // 🔥 OPTIMISTIC MESSAGE (SUDAH SUPPORT REPLY)
   const optimisticMsg = {
-  id: tempId,
-  message: text,
-  user_id: currentUser.id,
-  username: myUsername,
-  avatar: sideAvatar?.src || "profile.png",
-  role: myRole || "user",
-  created_at: new Date().toISOString(),
-  room_id: currentRoomId,
-  status: 'sending'
-};
+    id: tempId,
+    message: text,
+    user_id: currentUser.id,
+    username: myUsername,
+    avatar: sideAvatar?.src || "profile.png",
+    role: myRole || "user",
+    created_at: new Date().toISOString(),
+    room_id: currentRoomId,
+    status: 'sending',
+
+    // 🔥 INI KUNCINYA
+    reply_to_msg: replyData
+  };
 
   renderMessage(optimisticMsg);
   scrollToBottom();
 
-  inputEl.value = "";
+  // Reset input
+  chatInput.value = "";
+  chatInput.style.height = "auto";
   window.cancelReply();
-  sendSound.play().catch(() => {});
+  if (sendSound) sendSound.play().catch(() => {});
 
   try {
     const { data, error } = await supabase
@@ -694,14 +738,14 @@ async function Message() {
 
     if (error) throw error;
 
-    // ✅ langsung ubah temp bubble jadi pesan asli
     const tempEl = document.getElementById(`msg-${tempId}`);
-if (tempEl && data) {
-  tempEl.id = `msg-${data.id}`;
-  updateMessageStatusUI(data.id, 'sent');
-}
+    if (tempEl && data) {
+      tempEl.id = `msg-${data.id}`;
+      updateMessageStatusUI(data.id, 'sent');
+    }
 
-setTimeout(() => loadChatHistory(), 150);
+    setTimeout(() => loadChatHistory(), 150);
+
   } catch (err) {
     console.error("Gagal kirim:", err);
     showToast("Gagal mengirim pesan");
@@ -710,20 +754,17 @@ setTimeout(() => loadChatHistory(), 150);
     if (failEl) {
       const infoEl = failEl.querySelector('.message-info');
       const timeEl = failEl.querySelector('.timestamp');
-
       if (infoEl && timeEl) {
         const oldStatus = infoEl.querySelector('.status-icon');
         if (oldStatus) oldStatus.remove();
-
         timeEl.insertAdjacentHTML(
           'afterend',
-          `<span class="status-icon" style="font-size:10px; color:#ff4d4f; margin-left:4px;">failed</span>`
+          `<span style="font-size:10px; color:#ff4d4f; margin-left:4px;">failed</span>`
         );
       }
     }
   }
 }
-
 if (Btn) Btn.onclick = Message;
 
 if (inputEl) {
@@ -734,6 +775,56 @@ if (inputEl) {
     }
   });
 }
+
+async function sendAudioMessage(url) {
+  const tempId = "temp-" + Date.now();
+
+  // Render bubble chat khusus VN (pakai icon mic)
+  renderMessage({
+    id: tempId,
+    message: "🎤 Voice Note", 
+    audio_url: url, // Link dari Cloudinary
+    user_id: currentUser.id,
+    username: myUsername,
+    avatar: sideAvatar?.src || "profile.png",
+    role: myRole || "user",
+    created_at: new Date().toISOString(),
+    room_id: currentRoomId,
+    status: 'sending'
+  });
+
+  scrollToBottom();
+
+  try {
+    const { data, error } = await supabase
+      .from("messages")
+      .insert([{
+        message: "🎤 Voice Note",
+        audio_url: url,
+        user_id: currentUser.id,
+        username: myUsername,
+        room_id: currentRoomId,
+        status: 'sent'
+      }])
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Update ID temp jadi asli
+    const tempEl = document.getElementById(`msg-${tempId}`);
+    if (tempEl && data) {
+      tempEl.id = `msg-${data.id}`;
+      updateMessageStatusUI(data.id, 'sent');
+    }
+    
+    loadChatHistory();
+  } catch (err) {
+    console.error("Gagal simpan audio ke DB:", err);
+    showToast("Gagal mengirim VN ke chat");
+  }
+}
+
 // ===== Realtime Messages (NO REFRESH FIX) =====
 function initRealtimeMessages() {
   if (!currentUser) return;
@@ -743,64 +834,52 @@ function initRealtimeMessages() {
     messageChannel = null;
   }
 
-  // 1. HAPUS filter room_id di level channel agar bisa mendengar pesan masuk dari room mana saja
   messageChannel = supabase
-    .channel(`messages-global-monitor`) 
+    .channel(`messages-global-monitor`)
     .on(
       'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'messages'
-      },
+      { event: 'INSERT', schema: 'public', table: 'messages' },
       async (payload) => {
         const newMsg = payload.new;
-
-        // ✅ INI KUNCINYA: Sidebar otomatis update di sini
-        loadChatHistory(); 
+        loadChatHistory();
 
         if (newMsg.room_id === currentRoomId) {
-          
-          // Cegah double bubble (jika elemen sudah ada di layar, jangan render lagi)
+          // 1. Cek dulu, kalau sudah ada (id asli) jangan render lagi
           if (document.getElementById(`msg-${newMsg.id}`)) return;
 
-          // ===== Pesan dari diri sendiri =====
-          if (newMsg.user_id === currentUser.id) {
-            const tempEl = document.querySelector(`[id^="msg-temp-"]`);
-            if (tempEl) {
-              tempEl.id = `msg-${newMsg.id}`;
-              updateMessageStatusUI(newMsg.id, 'sent');
-            } else {
-              // Jika data profil belum ada di newMsg, render manual
-              renderMessage(newMsg);
-            }
-          } 
-          // ===== Pesan dari orang lain =====
-          else {
-            const { data: fullMsg } = await supabase
-              .from("messages")
-              .select(`
-                *,
-                reply_to_msg:reply_to(id, username, message),
-                profiles:profiles!messages_user_id_fkey(username, avatar_url, role)
-              `)
-              .eq("id", newMsg.id)
-              .single();
+          // 2. AMBIL DATA LENGKAP (Penting buat dapetin detail reply & profil)
+          const { data: fullMsg, error } = await supabase
+            .from("messages")
+            .select(`
+              *,
+              reply_to_msg:reply_to(id, username, message, sticker_url, audio_url),
+              profiles:profiles!messages_user_id_fkey(username, avatar_url, role)
+            `)
+            .eq("id", newMsg.id)
+            .single();
 
-            renderMessage(fullMsg || newMsg);
+          if (error || !fullMsg) return;
+
+          // 3. LOGIKA RENDER
+          if (fullMsg.user_id === currentUser.id) {
+            // Hapus bubble "temp" (yang polosan tanpa reply)
+            const tempEl = document.querySelector(`[id^="msg-temp-"]`);
+            if (tempEl) tempEl.remove();
+            
+            // Render ulang pake data fullMsg (yang sudah ada kotak reply-nya)
+            renderMessage(fullMsg);
+          } else {
+            // Pesan orang lain
+            renderMessage(fullMsg);
             receiveSound.play().catch(() => {});
             
-            // Auto read
-            try {
-              await supabase
-                .from("messages")
-                .update({ status: document.hidden ? 'delivered' : 'read' })
-                .eq("id", newMsg.id)
-                .neq("user_id", currentUser.id);
-            } catch (e) {
-              console.warn("Gagal update status:", e);
-            }
+            // Auto-read logic
+            await supabase
+              .from("messages")
+              .update({ status: document.hidden ? 'delivered' : 'read' })
+              .eq("id", fullMsg.id);
           }
+
           scrollToBottom();
           updateHeaderStatus();
         }
@@ -808,25 +887,15 @@ function initRealtimeMessages() {
     )
     .on(
       'postgres_changes',
-      {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'messages'
-        // 💡 Update status centang juga bisa didengar secara global
-      },
-      async (payload) => {
+      { event: 'UPDATE', schema: 'public', table: 'messages' },
+      (payload) => {
         const updated = payload.new;
         if (updated.room_id === currentRoomId && updated.user_id === currentUser.id) {
           updateMessageStatusUI(updated.id, updated.status || 'sent');
         }
       }
     )
-    .subscribe((status) => {
-      console.log("Realtime status:", status);
-      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-        setTimeout(() => { if (currentUser) initRealtimeMessages(); }, 1500);
-      }
-    });
+    .subscribe();
 }
 
 // ===== Sidebar Toggle =====
@@ -1416,6 +1485,237 @@ document.addEventListener("visibilitychange", async () => {
     await markRoomAsRead();
   }
 });
+const actionBtn = document.getElementById('action-btn');
+const chatInput = document.getElementById('chat-input');
+const vnOverlay = document.getElementById('vn-overlay');
+const vnTimer = document.getElementById('vn-timer');
+
+let holdTimer, timerInterval;
+let isRecording = false;
+let startX = 0; // Untuk deteksi geser
+let seconds = 0;
+
+// Fungsi Update Timer
+function startTimer() {
+    seconds = 0;
+    vnTimer.innerText = "00:00";
+    timerInterval = setInterval(() => {
+        seconds++;
+        let m = Math.floor(seconds / 60).toString().padStart(2, '0');
+        let s = (seconds % 60).toString().padStart(2, '0');
+        vnTimer.innerText = `${m}:${s}`;
+    }, 1000);
+}
+
+function stopTimer() {
+    clearInterval(timerInterval);
+}
+
+// Fungsi VN
+let mediaRecorder;
+let audioChunks = [];
+
+async function startVN(e) {
+    isRecording = true;
+    audioChunks = []; // Reset rekaman sebelumnya
+    
+    // Deteksi posisi awal buat fitur "Geser ke kiri untuk batal"
+    startX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+
+    try {
+        // 1. Minta izin akses Mic
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+
+        // 2. Kumpulin data suara saat sedang merekam
+        mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) audioChunks.push(event.data);
+        };
+
+        // 3. Logika saat rekaman berhenti (dilepas atau dibatalkan)
+        mediaRecorder.onstop = async () => {
+            // Hentikan penggunaan mic biar icon mic di browser ilang
+            stream.getTracks().forEach(track => track.stop());
+
+            // Kalau nggak dibatalin (nggak geser kiri), baru upload
+            if (!isCanceledGlobal && audioChunks.length > 0) {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/mpeg' });
+                uploadToCloudinary(audioBlob); // Fungsi upload yang kita bahas tadi
+            }
+        };
+
+        // 4. Mulai Rekam!
+        mediaRecorder.start();
+
+        // --- UI LOGIC ---
+        actionBtn.classList.add('is-recording');
+        chatInput.style.visibility = 'hidden';
+        vnOverlay.style.display = 'flex';
+        
+        if (navigator.vibrate) navigator.vibrate(60);
+        startTimer();
+
+    } catch (err) {
+        console.error("Mic error:", err);
+        showToast("Gagal akses mic. Pastikan izin diberikan!");
+        isRecording = false;
+    }
+}
+
+// Variabel helper global (tambahin di atas startVN kalau belum ada)
+let isCanceledGlobal = false; 
+
+function stopVN(isCanceled = false) {
+    if (!isRecording) return;
+    isRecording = false;
+    isCanceledGlobal = isCanceled; // Simpan status apakah dibatalkan
+    stopTimer();
+
+    // STOP RECORDING (Ini yang bakal ngetrigger upload ke Cloudinary)
+    if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
+    }
+
+    actionBtn.classList.remove('is-recording');
+    chatInput.style.visibility = 'visible';
+    vnOverlay.style.display = 'none';
+
+    if (isCanceled) {
+        showToast("VN Dibatalkan");
+        if (navigator.vibrate) navigator.vibrate([30, 30]);
+    } else {
+        // Cek durasi minimal 1 detik biar nggak kirim VN kosong
+        if (seconds < 1) {
+            isCanceledGlobal = true; // Anggap batal karena terlalu singkat
+            showToast("Tahan lebih lama untuk merekam");
+        }
+    }
+}
+
+// ===== Event Listeners Utama =====
+
+// 1. Logika Klik (Kirim Pesan)
+actionBtn.onclick = () => {
+    // Kalau ada teks, kirim pesan. Kalau kosong, fungsi VN diatur di mousedown/touchstart
+    if (chatInput && chatInput.value.trim() !== "") {
+        Message(); 
+    }
+};
+
+// 2. Desktop Support (Mouse)
+actionBtn.addEventListener('mousedown', (e) => {
+    // HANYA aktifkan VN kalau input kosong
+    if (chatInput.value.trim() === "") {
+        holdTimer = setTimeout(() => startVN(e), 300);
+    }
+});
+
+window.addEventListener('mousemove', (e) => {
+    if (isRecording) {
+        let currentX = e.clientX;
+        if (startX - currentX > 100) stopVN(true); // Geser kiri = Batal
+    }
+});
+
+window.addEventListener('mouseup', () => {
+    clearTimeout(holdTimer);
+    if (isRecording) stopVN(false);
+});
+
+// 3. Mobile Support (Touch)
+actionBtn.addEventListener('touchstart', (e) => {
+    // HANYA aktifkan VN kalau input kosong
+    if (chatInput.value.trim() === "") {
+        holdTimer = setTimeout(() => startVN(e), 300);
+    }
+}, { passive: true });
+
+actionBtn.addEventListener('touchmove', (e) => {
+    if (isRecording) {
+        let currentX = e.touches[0].clientX;
+        if (startX - currentX > 80) stopVN(true); // Geser kiri = Batal
+    }
+}, { passive: true });
+
+actionBtn.addEventListener('touchend', () => {
+    clearTimeout(holdTimer);
+    if (isRecording) stopVN(false);
+});
+async function uploadToCloudinary(blob) {
+    const cloudName = "dhhmkb8kl"; // ID Cloud lo
+    const uploadPreset = "hopehype_preset"; // Nama Preset Unsigned lo
+
+    const formData = new FormData();
+    formData.append("file", blob);
+    formData.append("upload_preset", uploadPreset);
+    
+    // WAJIB: Cloudinary butuh ini untuk memproses file audio (.mp3/wav)
+    formData.append("resource_type", "video"); 
+
+    try {
+        console.log("Sedang mengupload ke Cloudinary...");
+        // showToast("Mengirim pesan suara...");
+
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/upload`, {
+            method: "POST",
+            body: formData
+        });
+
+        const data = await res.json();
+        
+        if (data.secure_url) {
+            console.log("Upload Berhasil! URL:", data.secure_url);
+            // Panggil fungsi untuk simpan link ke Supabase
+            sendAudioMessage(data.secure_url);
+        } else {
+            console.error("Cloudinary Error:", data);
+            showToast("Gagal upload: " + (data.error?.message || "Unknown error"));
+        }
+    } catch (err) {
+        console.error("Koneksi Error:", err);
+        showToast("Koneksi bermasalah saat mengirim VN");
+    }
+}
+// ===== Fungsi Play Voice Note (Fix Play) =====
+window.playVN = function(btn, audioUrl) {
+  // 1. Cek apakah ada audio yang lagi jalan
+  if (window.currentAudio && !window.currentAudio.paused) {
+    window.currentAudio.pause();
+    // Reset icon & animasi semua tombol play
+    document.querySelectorAll('.vn-custom-player').forEach(p => p.classList.remove('playing'));
+    document.querySelectorAll('.vn-play-btn').forEach(b => {
+      b.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M8 5v14l11-7z"/></svg>`;
+    });
+
+    // Jika yang diklik adalah audio yang sama, maka berhenti saja
+    if (window.currentAudio.src === audioUrl) {
+      window.currentAudio = null;
+      return;
+    }
+  }
+
+  // 2. Buat objek audio baru
+  const audio = new Audio(audioUrl);
+  window.currentAudio = audio;
+  const playerContainer = btn.closest('.vn-custom-player');
+
+  audio.play().then(() => {
+    // 3. Tambahkan class playing buat animasi bar CSS
+    playerContainer.classList.add('playing');
+    // Ubah icon jadi Pause
+    btn.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
+  }).catch(err => {
+    console.error("Gagal putar audio:", err);
+    showToast("Gagal memutar pesan suara.");
+  });
+
+  // 4. Saat audio selesai
+  audio.onended = () => {
+    playerContainer.classList.remove('playing');
+    btn.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M8 5v14l11-7z"/></svg>`;
+    window.currentAudio = null;
+  };
+};
 
 // ===== Init =====
 async function init() {

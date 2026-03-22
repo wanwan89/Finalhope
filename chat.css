@@ -833,3 +833,201 @@ html, body {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.2); }
 }
+/* Container Utama */
+.chat-input-container {
+    display: flex;
+    align-items: flex-end;
+    padding: 10px 10px 20px 10px;
+    gap: 8px;
+    background: #f0f2f5; /* Warna background chat */
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Kapsul Putih */
+.input-group-wrapper {
+    display: flex;
+    align-items: center;
+    background: #ffffff;
+    border-radius: 24px;
+    flex: 1;
+    padding: 0 12px;
+    min-height: 48px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* Tombol Emoji */
+#sticker-btn {
+    background: none;
+    border: none;
+    color: #858a8d;
+    font-size: 24px;
+    margin-right: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+/* Input Area */
+#chat-input {
+    flex: 1;
+    border: none !important;
+    outline: none !important;
+    padding: 12px 0;
+    font-size: 16px;
+    max-height: 120px;
+    resize: none;
+    background: transparent;
+}
+
+/* Tombol Action Bulat */
+#action-btn {
+    width: 48px;
+    height: 48px;
+    background-color: #0088cc;
+    border-radius: 50%;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0; /* KUNCI: Biar gak gepeng */
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+/* Icon Morphing Logic */
+.icon-stack {
+    position: relative;
+    width: 24px;
+    height: 24px;
+}
+
+.svg-send, .svg-mic {
+    position: absolute;
+    inset: 0;
+    transition: all 0.3s ease;
+}
+
+.svg-mic {
+    opacity: 0;
+    transform: scale(0.5) rotate(-45deg);
+}
+
+/* KONDISI SAAT RECORDING (Transisi) */
+/* --- BAGIAN FIX: COPY DARI SINI SAMPAI BAWAH --- */
+
+/* 1. Fix Icon & Tombol Recording */
+#action-btn.is-recording {
+    background-color: #ff4757;
+    transform: scale(1.1);
+}
+
+#action-btn.is-recording .svg-send {
+    opacity: 0;
+    transform: scale(0) rotate(45deg);
+}
+
+#action-btn.is-recording .svg-mic {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+}
+
+/* 2. Fix Overlay VN & Animasi */
+#vn-overlay {
+    position: absolute;
+    inset: 0;
+    background: #fff;
+    display: none;
+    align-items: center;
+    padding: 0 15px;
+    border-radius: 24px;
+    z-index: 10;
+}
+
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+@keyframes slide-text { 0% { transform: translateX(0); } 50% { transform: translateX(-5px); } 100% { transform: translateX(0); } }
+
+/* 3. Style Voice Note HopeHype (Biru Bulat) */
+.vn-custom-player {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.05);
+    padding: 8px 12px;
+    border-radius: 20px;
+    min-width: 190px;
+    margin: 5px 0;
+    box-sizing: border-box;
+}
+
+.vn-play-btn {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 50% !important;
+    border: none !important;
+    background: #00d2ff !important; /* Biru khas HopeHype */
+    color: white !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    padding: 0;
+}
+
+.vn-play-btn svg {
+    width: 18px;
+    height: 18px;
+    fill: white;
+}
+
+.vn-waveform {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    height: 20px;
+    flex-grow: 1;
+}
+
+.vn-waveform .bar {
+    width: 3px;
+    height: 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 2px;
+    display: inline-block;
+}
+
+/* Variasi Tinggi Garis */
+.vn-waveform .bar:nth-child(odd) { height: 18px; }
+.vn-waveform .bar:nth-child(3n) { height: 8px; }
+
+.vn-time {
+    font-size: 10px;
+    font-weight: 600;
+    color: #666;
+    white-space: nowrap;
+    margin-left: 5px;
+}
+
+/* Animasi pas Play */
+.playing .bar {
+    animation: waveAnim 0.6s infinite alternate;
+    background: #00d2ff;
+}
+
+@keyframes waveAnim {
+    from { transform: scaleY(0.8); }
+    to { transform: scaleY(1.4); }
+}
+/* Menghilangkan kotak biru/abu-abu saat elemen diklik di mobile */
+* {
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+}
+
+/* Khusus untuk tombol atau menu agar tidak ada outline saat difokuskan */
+.menu-item-tiktok, .btn, .tab, button {
+    -webkit-tap-highlight-color: rgba(0,0,0,0);
+    user-select: none; /* Biar teksnya nggak gak sengaja kepilih/keblok */
+}
