@@ -37,8 +37,14 @@ document.querySelectorAll(".buy-coin-btn").forEach((btn) => {
 
     try {
       // Ambil user & session
-      const { data: { user }, error: userErr } = await db.auth.getUser();
-      const { data: { session }, error: sessionErr } = await db.auth.getSession();
+      const {
+        data: { user },
+        error: userErr,
+      } = await db.auth.getUser();
+      const {
+        data: { session },
+        error: sessionErr,
+      } = await db.auth.getSession();
 
       if (!user || !session) throw new Error("User belum login / session habis");
 
@@ -68,7 +74,11 @@ document.querySelectorAll(".buy-coin-btn").forEach((btn) => {
 
       const raw = await res.text();
       let result;
-      try { result = JSON.parse(raw); } catch (err) { throw new Error("Response server tidak valid: " + raw); }
+      try {
+        result = JSON.parse(raw);
+      } catch (err) {
+        throw new Error("Response server tidak valid: " + raw);
+      }
 
       const token = result?.token;
       if (!token) throw new Error("Token pembayaran tidak ditemukan");
@@ -91,6 +101,7 @@ document.querySelectorAll(".buy-coin-btn").forEach((btn) => {
     }
   };
 });
+
 // =======================
 // DYNAMIC BADGE SYSTEM
 // =======================
@@ -128,11 +139,11 @@ function getUserBadge(role) {
 // SUPABASE INIT
 // =======================
 const SUPABASE_URL = "https://hqetnqnvmdxdgfnnluew.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxZXRucW52bWR4ZGdmbm5sdWV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3MzUyODIsImV4cCI6MjA4NzMxMTI4Mn0.Cr9lDBZMqfeONi1dfyFzHpBtawBzZTQLBEWKmPJVAOA";
+const SUPABASE_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxZXRucW52bWR4ZGdmbm5sdWV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3MzUyODIsImV4cCI6MjA4NzMxMTI4Mn0.Cr9lDBZMqfeONi1dfyFzHpBtawBzZTQLBEWKmPJVAOA";
 
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
- 
 // =======================
 // AUDIO PLAYER
 // =======================
@@ -172,9 +183,6 @@ function CardImages(isDark) {
 // =======================
 // DARK MODE
 // =======================
-// =======================
-// DARK MODE
-// =======================
 const toggleBtn = document.querySelector(".toggle-dark");
 
 function applyTheme(isDark) {
@@ -188,9 +196,7 @@ if (toggleBtn) {
   const savedTheme = localStorage.getItem("theme");
   const isAutoDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
 
-  const isDark = savedTheme
-    ? savedTheme === "dark"
-    : isAutoDark;
+  const isDark = savedTheme ? savedTheme === "dark" : isAutoDark;
 
   applyTheme(isDark);
 
@@ -211,6 +217,7 @@ if (toggleBtn) {
   const isDark = savedTheme ? savedTheme === "dark" : isAutoDark;
   applyTheme(isDark);
 }
+
 // =======================
 // 3D HOVER TILT
 // =======================
@@ -423,7 +430,10 @@ if (avatarUpload && avatarPreview) {
 if (saveSettings) {
   saveSettings.addEventListener("click", async () => {
     try {
-      const { data: { user }, error: userError } = await db.auth.getUser();
+      const {
+        data: { user },
+        error: userError,
+      } = await db.auth.getUser();
       if (userError || !user) {
         showToast("Belum login", "Silakan login dulu", "warning");
         return;
@@ -448,7 +458,7 @@ if (saveSettings) {
         .single();
 
       if (error) {
-        if (error.code === '23505' || error.message.includes('unique')) {
+        if (error.code === "23505" || error.message.includes("unique")) {
           showToast("Gagal Update", "Username sudah terpakai!", "error");
           return;
         }
@@ -464,19 +474,18 @@ if (saveSettings) {
       }
 
       if (avatarEl && updatedProfile.avatar_url) {
-  const cacheBuster = `?t=${Date.now()}`;
-  
-  const finalSrc = updatedProfile.avatar_url.startsWith("data:image") 
-    ? updatedProfile.avatar_url 
-    : updatedProfile.avatar_url + cacheBuster;
+        const cacheBuster = `?t=${Date.now()}`;
 
-  avatarEl.src = finalSrc;
-  
-  if (avatarPreview) avatarPreview.src = finalSrc;
-}
+        const finalSrc = updatedProfile.avatar_url.startsWith("data:image")
+          ? updatedProfile.avatar_url
+          : updatedProfile.avatar_url + cacheBuster;
+
+        avatarEl.src = finalSrc;
+
+        if (avatarPreview) avatarPreview.src = finalSrc;
+      }
       if (settingsModal) settingsModal.classList.remove("active");
       showToast("Profil diperbarui", "Foto dan username berhasil diubah!", "success");
-
     } catch (err) {
       console.error("Gagal update:", err.message);
       showToast("Gagal update profil", err.message, "error");
@@ -562,11 +571,7 @@ async function checkPopup() {
   try {
     console.log("Checking pop-up status...");
 
-    const { data, error } = await db
-      .from("site_settings")
-      .select("*")
-      .eq("id", 1)
-      .single();
+    const { data, error } = await db.from("site_settings").select("*").eq("id", 1).single();
 
     if (error || !data || data.popup_active !== true) {
       console.log("Pop-up is inactive or error occurred.");
@@ -658,6 +663,7 @@ async function loadUser() {
     console.error("loadUser error:", err);
   }
 }
+
 // =======================
 // TOMBOL PRO + LIVECHAT
 // =======================
@@ -673,7 +679,7 @@ if (buyBtnElement && bSheet) {
     bSheet.style.display = "flex";
 
     // PERBAIKAN: Cek dulu apakah fungsi call ada
-    if (window.LiveChatWidget && typeof window.LiveChatWidget.call === 'function') {
+    if (window.LiveChatWidget && typeof window.LiveChatWidget.call === "function") {
       try {
         window.LiveChatWidget.call("hide_widget");
       } catch (err) {
@@ -687,13 +693,12 @@ if (buyBtnElement && bSheet) {
   };
 }
 
-// Ganti bagian bOverlay.onclick kamu menjadi ini:
 if (bOverlay && bSheet) {
   bOverlay.onclick = () => {
     bSheet.classList.remove("active");
 
     // Gunakan pengecekan yang lebih aman
-    if (window.LiveChatWidget && typeof window.LiveChatWidget.call === 'function') {
+    if (window.LiveChatWidget && typeof window.LiveChatWidget.call === "function") {
       try {
         window.LiveChatWidget.call("maximize_widget");
       } catch (e) {
@@ -733,6 +738,7 @@ async function updateAuthMenu() {
     if (logoutBtn) logoutBtn.textContent = "Login";
   }
 }
+
 document.getElementById("logoutBtn")?.addEventListener("click", async () => {
   try {
     if (notifChannel) {
@@ -768,6 +774,7 @@ document.getElementById("logoutBtn")?.addEventListener("click", async () => {
     showToast("Gagal logout", err.message, "error");
   }
 });
+
 // =======================
 //  APP
 // =======================
@@ -784,8 +791,7 @@ const initApp = async () => {
 };
 
 initApp();
- 
- 
+
 // ==========================================
 // LOGIKA BELI DENGAN EFEK PARTIKEL & LOADING
 // ==========================================
@@ -894,6 +900,7 @@ document.querySelectorAll(".buy-now-btn").forEach((button) => {
     }
   };
 });
+
 // =======================
 // NOTIFICATION SYSTEM (FIXED STRUCTURE)
 // =======================
@@ -914,17 +921,19 @@ function updateNotifBadge(count) {
   }
   notifCountEl.style.display = "flex";
   notifCountEl.textContent = count > 99 ? "99+" : String(count);
-  notifCountEl.animate([
-    { transform: 'scale(1)' },
-    { transform: 'scale(1.3)' },
-    { transform: 'scale(1)' }
-  ], { duration: 300, easing: 'ease-out' });
+  notifCountEl.animate(
+    [{ transform: "scale(1)" }, { transform: "scale(1.3)" }, { transform: "scale(1)" }],
+    { duration: 300, easing: "ease-out" }
+  );
 }
 
 // ===== LOAD UNREAD NOTIF =====
 async function loadUnreadNotifications() {
   try {
-    const { data: { user }, error: userError } = await db.auth.getUser();
+    const {
+      data: { user },
+      error: userError,
+    } = await db.auth.getUser();
     if (userError || !user) {
       updateNotifBadge(0);
       return;
@@ -980,34 +989,54 @@ async function loadNotificationList() {
       return;
     }
 
-    data.forEach(n => {
+    data.forEach((n) => {
       const li = document.createElement("li");
       const bgUnread = isDark ? "rgba(29,161,242,0.15)" : "rgba(29,161,242,0.05)";
       const bgRead = isDark ? "#363b5e" : "#ffffff";
       const borderColor = n.is_read ? (isDark ? "#444b75" : "#f0f0f0") : "rgba(29,161,242,0.2)";
       const textColor = isDark ? "#eeeeee" : "#333333";
-      
+
       // FIX: Ambil tipe dengan lowercase agar matching case-insensitive
       const type = n.type ? n.type.toLowerCase() : "";
 
-      let iconName = type === "like" ? "favorite" : 
-                     type === "comment" ? "chat_bubble" : 
-                     type === "follow" ? "person_add" : 
-                     type === "withdraw" ? "payments" : "notifications";
+      let iconName =
+        type === "like"
+          ? "favorite"
+          : type === "comment"
+          ? "chat_bubble"
+          : type === "follow"
+          ? "person_add"
+          : type === "withdraw"
+          ? "payments"
+          : "notifications";
 
-      let iconColor = type === "like" ? "#FF3040" : 
-                      type === "comment" ? "#00D084" : 
-                      type === "follow" ? "#9b59b6" : 
-                      type === "withdraw" ? "#f09f33" : "#1DA1F2";
+      let iconColor =
+        type === "like"
+          ? "#FF3040"
+          : type === "comment"
+          ? "#00D084"
+          : type === "follow"
+          ? "#9b59b6"
+          : type === "withdraw"
+          ? "#f09f33"
+          : "#1DA1F2";
 
       // Tambahkan format waktu sederhana
-      const time = n.created_at ? new Date(n.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+      const time = n.created_at
+        ? new Date(n.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        : "";
 
       Object.assign(li.style, {
-        padding: "14px", marginBottom: "10px", borderRadius: "18px", cursor: "pointer",
-        display: "flex", alignItems: "center", gap: "12px",
+        padding: "14px",
+        marginBottom: "10px",
+        borderRadius: "18px",
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        gap: "12px",
         background: n.is_read ? bgRead : bgUnread,
-        border: "1px solid " + borderColor, transition: "all 0.2s ease"
+        border: "1px solid " + borderColor,
+        transition: "all 0.2s ease",
       });
 
       li.innerHTML = `
@@ -1020,13 +1049,13 @@ async function loadNotificationList() {
           </p>
           <span style="font-size:10px; color:#888; margin-top:4px; display:block;">${time}</span>
         </div>
-        ${!n.is_read ? '<div style="width:6px; height:6px; background:#1DA1F2; border-radius:50%;"></div>' : ''}
+        ${!n.is_read ? '<div style="width:6px; height:6px; background:#1DA1F2; border-radius:50%;"></div>' : ""}
       `;
 
       li.onclick = async () => {
         try {
           await db.from("notifications").update({ is_read: true }).eq("id", n.id);
-          
+
           // Gunakan variabel 'type' yang sudah di-lowercase untuk switch
           switch (type) {
             case "follow":
@@ -1038,50 +1067,57 @@ async function loadNotificationList() {
               break;
             default:
               if (n.post_id) {
-                  window.location.href = `post.html?id=${n.post_id}`;
+                window.location.href = `post.html?id=${n.post_id}`;
               } else {
-                  closeNotif(); 
+                closeNotif();
               }
               break;
           }
-        } catch (e) { 
-          console.error("Redirect error:", e); 
+        } catch (e) {
+          console.error("Redirect error:", e);
         }
       };
 
       container.appendChild(li);
     });
-  } catch (err) { 
-    console.error("loadNotificationList error:", err); 
+  } catch (err) {
+    console.error("loadNotificationList error:", err);
   }
 }
 
 // ===== SUBSCRIBE REALTIME =====
 async function subscribeNotifications() {
   try {
-    const { data: { user } } = await db.auth.getUser();
+    const {
+      data: { user },
+    } = await db.auth.getUser();
     if (!user) return;
     currentUserId = user.id;
 
     if (notifChannel) db.removeChannel(notifChannel);
 
-    notifChannel = db.channel("user-notifications")
-      .on("postgres_changes", {
-        event: "INSERT",
-        schema: "public",
-        table: "notifications",
-        filter: `user_id=eq.${user.id}`,
-      }, async (payload) => {
-        if (!notificationsPaused) {
-          await loadUnreadNotifications();
-          // Gunakan regex buat bersihin pesan dari tag HTML untuk toast
-          const cleanMsg = payload.new.message.replace(/<[^>]*>/g, '');
-          showToast("Notifikasi Baru", cleanMsg, "info");
+    notifChannel = db
+      .channel("user-notifications")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${user.id}`,
+        },
+        async (payload) => {
+          if (!notificationsPaused) {
+            await loadUnreadNotifications();
+            // Gunakan regex buat bersihin pesan dari tag HTML untuk toast
+            const cleanMsg = payload.new.message.replace(/<[^>]*>/g, "");
+            showToast("Notifikasi Baru", cleanMsg, "info");
+          }
         }
-      })
+      )
       .subscribe();
-  } catch (err) { 
-    console.error("Sub error:", err); 
+  } catch (err) {
+    console.error("Sub error:", err);
   }
 }
 
@@ -1089,7 +1125,7 @@ async function subscribeNotifications() {
 if (notifBell) {
   notifBell.onclick = async (e) => {
     e.stopPropagation();
-    notificationsPaused = true; 
+    notificationsPaused = true;
 
     if (notifCountEl) {
       notifCountEl.style.display = "none";
@@ -1097,7 +1133,8 @@ if (notifBell) {
     }
 
     try {
-      await db.from("notifications")
+      await db
+        .from("notifications")
         .update({ is_read: true })
         .eq("user_id", currentUserId)
         .eq("is_read", false);
@@ -1106,8 +1143,10 @@ if (notifBell) {
     }
 
     await loadNotificationList();
-    
-    setTimeout(() => { notificationsPaused = false; }, 2000);
+
+    setTimeout(() => {
+      notificationsPaused = false;
+    }, 2000);
 
     let overlay = document.getElementById("notifOverlay");
     if (!overlay) {
@@ -1117,17 +1156,38 @@ if (notifBell) {
     }
 
     Object.assign(overlay.style, {
-      display: "block", position: "fixed", top: "0", left: "0", width: "100vw", height: "100vh",
-      background: "rgba(0,0,0,0.5)", backdropFilter: "blur(6px)", zIndex: "10000", opacity: "0", transition: "opacity 0.3s ease"
+      display: "block",
+      position: "fixed",
+      top: "0",
+      left: "0",
+      width: "100vw",
+      height: "100vh",
+      background: "rgba(0,0,0,0.5)",
+      backdropFilter: "blur(6px)",
+      zIndex: "10000",
+      opacity: "0",
+      transition: "opacity 0.3s ease",
     });
     overlay.onclick = closeNotif;
 
     Object.assign(notifList.style, {
-      display: "flex", flexDirection: "column", position: "fixed", top: "50%", left: "50%",
-      transform: "translate(-50%, -50%)", width: "88vw", maxWidth: "380px", maxHeight: "75vh",
+      display: "flex",
+      flexDirection: "column",
+      position: "fixed",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      width: "88vw",
+      maxWidth: "380px",
+      maxHeight: "75vh",
       background: document.body.classList.contains("dark") ? "#2b3050" : "#ffffff",
-      zIndex: "10001", borderRadius: "28px", boxShadow: "0 20px 60px rgba(0,0,0,0.4)",
-      padding: "20px", overflowY: "auto", opacity: "0", transition: "opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+      zIndex: "10001",
+      borderRadius: "28px",
+      boxShadow: "0 20px 60px rgba(0,0,0,0.4)",
+      padding: "20px",
+      overflowY: "auto",
+      opacity: "0",
+      transition: "opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
     });
 
     requestAnimationFrame(() => {
@@ -1190,6 +1250,7 @@ function createParticles(x, y) {
     setTimeout(() => p.remove(), 1000);
   }
 }
+
 // =======================
 // TOMBOL KOIN + SLIDE UP
 // =======================
@@ -1235,6 +1296,7 @@ if (coinOverlay && coinSheet) {
     }, 400);
   };
 }
+
 // =======================
 // BELI KOIN -> MIDTRANS
 // =======================
@@ -1312,14 +1374,13 @@ document.querySelectorAll(".buy-coin-btn").forEach((button) => {
           Authorization: `Bearer ${session.access_token}`,
         },
         // Baris +/- 540
-body: JSON.stringify({
-  userId: user.id, // Pastikan ini tetap user.id (JANGAN di-slice)
-  email: user.email,
-  amount: price,
-  coins: coins,
-  item_name: name,
-}),
-
+        body: JSON.stringify({
+          userId: user.id, // Pastikan ini tetap user.id (JANGAN di-slice)
+          email: user.email,
+          amount: price,
+          coins: coins,
+          item_name: name,
+        }),
       });
 
       console.log("response status:", response.status);
@@ -1380,14 +1441,14 @@ body: JSON.stringify({
   const COIN_PRICE = 100;
   const MIN_TRANSACTION = 10000; // Batas minimal Rp 10.000 dari Midtrans
   const MAX_COINS = 5000;
-  
+
   const customInput = document.getElementById("custom-coins");
   const customBtn = document.getElementById("buy-custom-coin-btn");
   const priceDisplay = document.getElementById("custom-price-display");
 
   const initMidtrans = () => {
-    if (!window.snap && typeof loadMidtrans === 'function') {
-      loadMidtrans(); 
+    if (!window.snap && typeof loadMidtrans === "function") {
+      loadMidtrans();
     }
   };
   initMidtrans();
@@ -1395,9 +1456,9 @@ body: JSON.stringify({
   customInput.addEventListener("input", () => {
     const coins = parseInt(customInput.value) || 0;
     const price = coins * COIN_PRICE;
-    
+
     if (coins > 0) {
-      priceDisplay.textContent = `Total: Rp ${price.toLocaleString('id-ID')}`;
+      priceDisplay.textContent = `Total: Rp ${price.toLocaleString("id-ID")}`;
       // Beri warna merah jika masih di bawah minimum Rp 10.000
       priceDisplay.style.color = price < MIN_TRANSACTION ? "#ff4757" : "#4ade80";
     } else {
@@ -1408,31 +1469,33 @@ body: JSON.stringify({
   customBtn.addEventListener("click", async () => {
     const coins = parseInt(customInput.value);
     const price = coins * COIN_PRICE;
-    
+
     // 1. Validasi Jumlah Koin
     if (!coins || coins <= 0) return showToast("Masukkan jumlah koin!", "", "warning");
-    
+
     // 2. Validasi Minimal Rp 10.000 (PENTING)
     if (price < MIN_TRANSACTION) {
-      return showToast(
-        "Minimal Rp 10.000", 
-        `Butuh minimal ${MIN_TRANSACTION / COIN_PRICE} koin untuk lanjut.`, 
-        "warning"
-      );
+      return showToast("Minimal Rp 10.000", `Butuh minimal ${MIN_TRANSACTION / COIN_PRICE} koin untuk lanjut.`, "warning");
     }
 
     if (coins > MAX_COINS) return showToast(`Maksimal ${MAX_COINS} koin`, "", "warning");
 
-    if (typeof createParticles === 'function') {
-        createParticles(window.innerWidth / 2, window.innerHeight / 2);
+    if (typeof createParticles === "function") {
+      createParticles(window.innerWidth / 2, window.innerHeight / 2);
     }
     customBtn.classList.add("btn-loading");
 
     try {
-      const { data: { user }, error: userError } = await db.auth.getUser();
+      const {
+        data: { user },
+        error: userError,
+      } = await db.auth.getUser();
       if (userError || !user) throw new Error("Silakan login terlebih dahulu!");
 
-      const { data: { session }, error: sessionError } = await db.auth.getSession();
+      const {
+        data: { session },
+        error: sessionError,
+      } = await db.auth.getSession();
       if (sessionError || !session) throw new Error("Sesi habis, silakan login ulang.");
 
       if (!window.snap) {
@@ -1441,23 +1504,20 @@ body: JSON.stringify({
         return;
       }
 
-      const response = await fetch(
-        "https://hqetnqnvmdxdgfnnluew.supabase.co/functions/v1/pay-coins",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({
-            userId: user.id,
-            email: user.email,
-            amount: price,
-            coins: coins,
-            item_name: `${coins} Koin (Custom)`,
-          }),
-        }
-      );
+      const response = await fetch("https://hqetnqnvmdxdgfnnluew.supabase.co/functions/v1/pay-coins", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          email: user.email,
+          amount: price,
+          coins: coins,
+          item_name: `${coins} Koin (Custom)`,
+        }),
+      });
 
       // Ambil detail error jika response tidak OK
       if (!response.ok) {
@@ -1478,7 +1538,6 @@ body: JSON.stringify({
         onError: () => showToast("Pembayaran gagal", "", "error"),
         onClose: () => showToast("Pembayaran dibatalkan", "", "info"),
       });
-
     } catch (err) {
       console.error("Error Detail:", err);
       showToast("Gagal", err.message, "error");

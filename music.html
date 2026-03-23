@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Music</title>
-<link rel="icon" type="book.png" href="book.png">
+    <link rel="icon" type="image/png" href="book.png">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="music.css">
@@ -18,14 +18,14 @@
         <h2> Menu</h2>
         <span class="material-icons" id="closeSidebar" style="cursor: pointer;">close</span>
     </div>
-    <a href="#" class="nav-item" data-category="trending">
-        <span class="material-icons">trending_up</span> Trending
+    <a href="#" class="nav-item" data-category="singer">
+        <span class="material-icons">mic</span> Singer
     </a>
     <a href="#" class="nav-item" data-category="viral">
         <span class="material-icons">auto_awesome</span> Viral
     </a>
-    <a href="#" class="nav-item" data-category="hot">
-        <span class="material-icons">whatshot</span> Hot
+    <a href="#" class="nav-item" data-category="top">
+        <span class="material-icons">star</span> Top
     </a>
 </div>
 
@@ -85,9 +85,8 @@
             <span class="material-icons" id="openSidebar" style="cursor: pointer;">menu</span>
             <h1>Stream song</h1>
         </div>
-<div class="profile-image">
-    <img src="music.png" alt="Profile"> </div>
-
+        <div class="profile-image">
+            <img src="music.png" alt="Profile"> 
         </div>
     </header>
     <div class="search-box">
@@ -98,10 +97,10 @@
         <button class="active" data-cat="all">All</button>
         <button data-cat="music">Music</button>
         <button data-cat="hopers">Hopers</button>
-<button data-cat="playlist">Playlist</button>
-<button data-cat="trending">Trending</button>
-<button data-cat="trend">Trend</button>
-<button data-cat="viral">Viral</button>
+        <button data-cat="playlist">Playlist</button>
+        <button data-cat="trending">Trending</button>
+        <button data-cat="trend">Trend</button>
+        <button data-cat="viral">Viral</button>
     </div>
 </div>
 
@@ -122,6 +121,7 @@
         <span class="material-icons" id="play-btn">play_arrow</span>
     </div>
 </div>
+
 <div id="commentOverlay" class="comment-overlay" onclick="hideComments()"></div>
 
 <div id="commentSheet" class="comment-sheet">
@@ -134,7 +134,7 @@
     </div>
     
     <div id="commentList" class="comment-body">
-        </div>
+    </div>
 
     <div class="comment-footer">
         <input type="text" id="commentInput" placeholder="Tulis komentar...">

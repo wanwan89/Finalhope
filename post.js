@@ -6,10 +6,10 @@ function showNotif(msg, type = "info") {
   // Kita cek apakah window.toast itu fungsi DAN bukan fungsi ini sendiri
   if (typeof window.toast === "function" && window.toast !== showNotif) {
     const title = type === "success" ? "Berhasil" : type === "error" ? "Gagal" : "Info";
-    
+
     try {
       // Panggil fungsi asli dari library toast.js lo
-      window.toast(title, msg, type); 
+      window.toast(title, msg, type);
       return;
     } catch (e) {
       console.warn("Gagal panggil library toast, pakai fallback alert.");
@@ -23,11 +23,13 @@ function showNotif(msg, type = "info") {
 console.log("JS CONNECTED");
 const CLOUDINARY_CLOUD_NAME = "dhhmkb8kl";
 const CLOUDINARY_UPLOAD_PRESET = "post_hope";
+
 // =======================
 // SUPABASE INIT
 // =======================
 const SUPABASE_URL = "https://hqetnqnvmdxdgfnnluew.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxZXRucW52bWR4ZGdmbm5sdWV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3MzUyODIsImV4cCI6MjA4NzMxMTI4Mn0.Cr9lDBZMqfeONi1dfyFzHpBtawBzZTQLBEWKmPJVAOA"; // ganti kalau perlu
+const SUPABASE_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxZXRucW52bWR4ZGdmbm5sdWV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3MzUyODIsImV4cCI6MjA4NzMxMTI4Mn0.Cr9lDBZMqfeONi1dfyFzHpBtawBzZTQLBEWKmPJVAOA"; // ganti kalau perlu
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUser = null;
@@ -43,15 +45,16 @@ let giftState = {
   userCoins: 0,
   selectedAmount: 0,
 };
- 
- 
+
 // =======================
 // CREATE NOTIFICATION
 // =======================
 async function createNotification({ user_id, actor_id, post_id, type, message }) {
   try {
     // 1. Ambil ID ASLI lo dari Supabase Auth (Gak mau percaya variabel luar)
-    const { data: { user: authUser } } = await supabaseClient.auth.getUser();
+    const {
+      data: { user: authUser },
+    } = await supabaseClient.auth.getUser();
     if (!authUser) return;
 
     const finalActorId = authUser.id; // Ini PASTI UUID (lo yang nge-like/komen)
@@ -60,7 +63,7 @@ async function createNotification({ user_id, actor_id, post_id, type, message })
     // 2. PROTEKSI KRITIKAL: Cek apakah user_id tujuan itu UUID atau bukan
     // Kalau formatnya bukan UUID (seperti "devhope"), kita gak kirim notif biar gak error 500
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    
+
     if (!uuidRegex.test(finalTargetUserId)) {
       console.warn("⚠️ Notif dibatalkan: Target user_id bukan UUID valid (Mungkin masih 'devhope')");
       return;
@@ -76,7 +79,7 @@ async function createNotification({ user_id, actor_id, post_id, type, message })
       post_id: parseInt(post_id), // Pastikan format angka (BigInt)
       type: type,
       message: message,
-      is_read: false
+      is_read: false,
     });
 
     if (error) {
@@ -106,7 +109,6 @@ document.addEventListener("DOMContentLoaded", () => {
       // Sekarang fetchPosts gak bakal rebutan lock lagi sama getUser.
       await fetchPosts("all");
       console.log("✅ Posts Loaded.");
-
     } catch (err) {
       console.error("❌ Startup Error:", err.message);
       // Kalau Auth gagal, tetep paksa tarik post buat tamu (Guest Mode)
@@ -115,17 +117,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 3. INIT FITUR LAINNYA
     const safeInit = (name, fn) => {
-      try { if (typeof fn === "function") fn(); } 
-      catch (e) { console.warn(`Gagal init ${name}`); }
+      try {
+        if (typeof fn === "function") fn();
+      } catch (e) {
+        console.warn(`Gagal init ${name}`);
+      }
     };
 
     safeInit("Search", initSearch);
-safeInit("ReplyClick", initReplyClick);
-safeInit("Auth", initAuth);
-safeInit("Realtime", initRealtime);
-safeInit("CloseButtons", initCloseButtons);
-safeInit("PostModal", initPostModal);
-if (typeof initGiftSheet === "function") safeInit("GiftSheet", initGiftSheet);
+    safeInit("ReplyClick", initReplyClick);
+    safeInit("Auth", initAuth);
+    safeInit("Realtime", initRealtime);
+    safeInit("CloseButtons", initCloseButtons);
+    safeInit("PostModal", initPostModal);
+    if (typeof initGiftSheet === "function") safeInit("GiftSheet", initGiftSheet);
   };
 
   // Jalankan fungsi utama
@@ -165,7 +170,7 @@ if (typeof initGiftSheet === "function") safeInit("GiftSheet", initGiftSheet);
 });
 
 // =======================
-// FETCH POSTS (VERSI FIX PROFIL)
+// FETCH POSTS (VERSI FIX KATEGORI & PROFIL)
 // =======================
 async function fetchPosts(category = "all") {
   const gallery = document.getElementById("mainGallery");
@@ -173,16 +178,22 @@ async function fetchPosts(category = "all") {
 
   gallery.innerHTML = `
     <div class="skeleton-wrapper" style="grid-column: 1/-1; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; width: 100%;">
-      ${Array(6).fill(0).map(() => `
+      ${Array(6)
+        .fill(0)
+        .map(
+          () => `
         <div class="skeleton-card"><div class="skeleton-shimmer"></div></div>
-      `).join('')}
+      `
+        )
+        .join("")}
     </div>
   `;
 
   try {
     let query = supabaseClient
       .from("posts")
-      .select(`
+      .select(
+        `
         *,
         profiles!inner (
           id,
@@ -190,15 +201,19 @@ async function fetchPosts(category = "all") {
           role,
           avatar_url
         )
-      `)
+      `
+      )
       .eq("status", "approved");
 
-    if (category !== "all") query = query.eq("category", category);
+    // FIX: Menggunakan .ilike dan wildcard agar pencarian kategori lebih fleksibel dan tidak peduli spasi berlebih
+    if (category && category !== "all") {
+      query = query.ilike("category", `%${category.trim()}%`);
+    }
 
     const { data: posts, error } = await query.order("created_at", { ascending: false });
     if (error) throw error;
 
-    await new Promise(resolve => setTimeout(resolve, 600));
+    await new Promise((resolve) => setTimeout(resolve, 600));
     gallery.innerHTML = "";
 
     if (!posts || posts.length === 0) {
@@ -208,11 +223,11 @@ async function fetchPosts(category = "all") {
 
     posts.forEach((post) => {
       const card = document.createElement("div");
-      card.className = "card post-fade-in"; 
-      
+      card.className = "card post-fade-in";
+
       const userRole = (post.profiles?.role || "user").toLowerCase().trim();
       const roleBerhakCentang = ["verified", "crown1", "crown2", "crown3"];
-      
+
       let verifiedBadge = "";
       if (userRole !== "user" && roleBerhakCentang.includes(userRole)) {
         verifiedBadge = `
@@ -226,7 +241,9 @@ async function fetchPosts(category = "all") {
 
       const dateObj = new Date(post.created_at);
       const formattedDate = dateObj.toLocaleDateString("id-ID", {
-        day: "numeric", month: "long", year: "numeric",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
       });
 
       // --- PERBAIKAN DI SINI: Pake post.creator_id bukan post.name ---
@@ -257,12 +274,11 @@ async function fetchPosts(category = "all") {
       gallery.appendChild(card);
     });
 
-    initGiftButtons(); 
-    initLikeButtons(); 
-    initComments(); 
-    loadLikes(); 
+    initGiftButtons();
+    initLikeButtons();
+    initComments();
+    loadLikes();
     loadCommentCounts();
-
   } catch (err) {
     console.error("Fetch Error:", err.message);
     gallery.innerHTML = '<p style="color:red; text-align:center; grid-column:1/-1;">Gagal memuat data.</p>';
@@ -278,7 +294,9 @@ function initGiftButtons() {
     btn.parentNode.replaceChild(newBtn, btn);
 
     newBtn.addEventListener("click", async () => {
-      const { data: { user: authUser } } = await supabaseClient.auth.getUser();
+      const {
+        data: { user: authUser },
+      } = await supabaseClient.auth.getUser();
 
       if (!authUser) {
         openLogin();
@@ -344,32 +362,32 @@ function openGiftSheet({ postId, creatorId, creatorName, userCoins }) {
     sendBtn.disabled = true;
     sendBtn.textContent = "Kirim";
   }
-  document.querySelectorAll(".gift-item").forEach(i => i.classList.remove("active"));
+  document.querySelectorAll(".gift-item").forEach((i) => i.classList.remove("active"));
 
   // Tampilkan sheet
   sheet.classList.add("active");
-  document.body.style.overflow = "hidden"; 
+  document.body.style.overflow = "hidden";
 }
 
 // 1. Pastikan variabel ini ada di paling atas (Global Scope)
-let selectedGiftImage = null; 
+let selectedGiftImage = null;
 
 // 2. Fungsi Pilih Gift (Sesuai dengan onclick di HTML)
 function selectGift(element, amount, imageName) {
   // 1. Hapus tanda 'selected-gift' dari semua item lain dulu
-  document.querySelectorAll('.gift-item').forEach(item => {
-    item.classList.remove('selected-gift');
+  document.querySelectorAll(".gift-item").forEach((item) => {
+    item.classList.remove("selected-gift");
   });
 
   // 2. Tambahkan tanda ke item yang barusan diklik
-  element.classList.add('selected-gift');
+  element.classList.add("selected-gift");
 
   // 3. Simpan datanya ke variabel global
   selectedGiftImage = imageName;
   giftState.selectedAmount = amount;
 
   // 4. Nyalain tombol kirim
-  const sendBtn = document.getElementById('sendGiftBtn');
+  const sendBtn = document.getElementById("sendGiftBtn");
   if (sendBtn) {
     sendBtn.disabled = false;
     sendBtn.style.opacity = "1";
@@ -393,14 +411,16 @@ async function processGiftTransaction() {
   sendBtn.textContent = "Mengirim...";
 
   try {
-    const { data: { user: authUser } } = await supabaseClient.auth.getUser();
+    const {
+      data: { user: authUser },
+    } = await supabaseClient.auth.getUser();
     if (!authUser) return;
 
     // --- PROSES POTONG KOIN DI DATABASE ---
-    const { error: transferError } = await supabaseClient.rpc('transfer_coins', {
+    const { error: transferError } = await supabaseClient.rpc("transfer_coins", {
       sender_id: authUser.id,
       receiver_id: giftState.creatorId,
-      amount: amount
+      amount: amount,
     });
 
     if (transferError) throw new Error(transferError.message);
@@ -410,12 +430,12 @@ async function processGiftTransaction() {
       sender_id: authUser.id,
       receiver_id: giftState.creatorId,
       post_id: parseInt(giftState.postId),
-      amount: amount
+      amount: amount,
     });
 
     // --- JALANKAN ANIMASI (Gunakan fungsi showBigImage kamu) ---
-    showBigImage(giftImage); 
-    
+    showBigImage(giftImage);
+
     // Efek Tambahan: Confetti
     confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
 
@@ -438,9 +458,8 @@ async function processGiftTransaction() {
     giftState.userCoins -= amount;
     const coinDisplay = document.getElementById("giftUserCoins");
     if (coinDisplay) coinDisplay.textContent = giftState.userCoins;
-    
-    closeGiftSheet();
 
+    closeGiftSheet();
   } catch (err) {
     console.error("Gift error:", err.message);
     toast("Gagal mengirim gift: " + err.message);
@@ -451,23 +470,22 @@ async function processGiftTransaction() {
   }
 }
 
- 
 // SHOW SMOOTH TIKTOK GIFT ANIMATION
 // =======================
 function showBigImage(imageName) {
-  const container = document.getElementById('giftAnimationContainer');
+  const container = document.getElementById("giftAnimationContainer");
   if (!container) return;
 
   // 1. Bersihkan kontainer agar tidak menumpuk
-  container.innerHTML = '';
+  container.innerHTML = "";
 
   // 2. Buat elemen gambar utama saja
-  const mainImg = document.createElement('img');
+  const mainImg = document.createElement("img");
   mainImg.src = imageName;
-  
+
   // Gunakan class CSS yang sudah kita buat sebelumnya untuk animasi smooth
-  mainImg.className = 'gift-main-img'; 
-  
+  mainImg.className = "gift-main-img";
+
   container.appendChild(mainImg);
 
   // 3. Tambahkan efek Confetti (opsional, hapus jika tidak mau ada partikel warna-warni)
@@ -475,12 +493,12 @@ function showBigImage(imageName) {
     particleCount: 150,
     spread: 70,
     origin: { y: 0.6 },
-    zIndex: 999999
+    zIndex: 999999,
   });
 
   // 4. Hilangkan otomatis setelah 2.5 detik
-  setTimeout(() => { 
-    container.innerHTML = ''; 
+  setTimeout(() => {
+    container.innerHTML = "";
   }, 2500);
 }
 
@@ -497,10 +515,11 @@ function closeGiftSheet() {
   // Reset pilihan gift
   giftState.selectedAmount = 0;
   selectedGiftImage = null;
-  document.querySelectorAll('.gift-item').forEach(g => g.classList.remove('selected-gift'));
-  const sendBtn = document.getElementById('sendGiftBtn');
+  document.querySelectorAll(".gift-item").forEach((g) => g.classList.remove("selected-gift"));
+  const sendBtn = document.getElementById("sendGiftBtn");
   if (sendBtn) sendBtn.disabled = true;
 }
+
 // =======================
 // COMMENTS & REPLY SYSTEM
 // =======================
@@ -544,7 +563,9 @@ function initComments() {
       input.placeholder = "Mengirim...";
 
       try {
-        const { data: { user } } = await supabaseClient.auth.getUser();
+        const {
+          data: { user },
+        } = await supabaseClient.auth.getUser();
         if (!user) return;
 
         // INSERT KE DATABASE
@@ -586,11 +607,12 @@ function initComments() {
 
         await updateCommentCount(currentPostId);
         await loadCommentsStructured();
-
       } catch (err) {
         console.error("Gagal kirim komentar:", err.message);
         input.placeholder = "Gagal mengirim...";
-        setTimeout(() => { input.placeholder = "Tulis komentar..."; }, 2000);
+        setTimeout(() => {
+          input.placeholder = "Tulis komentar...";
+        }, 2000);
       }
     }
   };
@@ -606,7 +628,9 @@ function createComment(comment, isReply, postOwnerId) {
   // --- LOGIKA CREATOR BADGE ---
   // Jika ID yang komen sama dengan ID yang punya postingan
   const isPostOwner = commenterId === postOwnerId;
-  const creatorBadge = isPostOwner ? `<span style="background:#444; color:#eee; padding:2px 6px; border-radius:4px; font-size:9px; margin-left:5px; font-weight:800; border:1px solid #555; vertical-align:middle; display:inline-block;">CREATOR</span>` : "";
+  const creatorBadge = isPostOwner
+    ? `<span style="background:#444; color:#eee; padding:2px 6px; border-radius:4px; font-size:9px; margin-left:5px; font-weight:800; border:1px solid #555; vertical-align:middle; display:inline-block;">CREATOR</span>`
+    : "";
   // ----------------------------
 
   let timeText = "";
@@ -620,7 +644,7 @@ function createComment(comment, isReply, postOwnerId) {
     else timeText = `${created.getDate()}/${created.getMonth() + 1}`;
   }
 
-  const profileLink = `data.html?id=${p?.id || ""}`; 
+  const profileLink = `data.html?id=${p?.id || ""}`;
 
   div.innerHTML = `
     <div class="comment-left">
@@ -656,7 +680,6 @@ function createComment(comment, isReply, postOwnerId) {
   return div;
 }
 
-
 function initReplyClick() {
   document.addEventListener("click", (e) => {
     if (e.target.classList.contains("reply-btn")) {
@@ -681,19 +704,15 @@ async function loadCommentsStructured() {
 
   try {
     const [commentsRes, postRes] = await Promise.all([
-  // TAMBAHKAN 'id' DI SINI (profiles(id, ...))
-  supabaseClient
-    .from("comments")
-    .select("*, profiles(id, username, avatar_url, role)") 
-    .eq("post_id", currentPostId)
-    .order("created_at", { ascending: true }),
+      // TAMBAHKAN 'id' DI SINI (profiles(id, ...))
+      supabaseClient
+        .from("comments")
+        .select("*, profiles(id, username, avatar_url, role)")
+        .eq("post_id", currentPostId)
+        .order("created_at", { ascending: true }),
 
-  supabaseClient
-    .from("posts")
-    .select("creator_id")
-    .eq("id", currentPostId)
-    .single()
-]);
+      supabaseClient.from("posts").select("creator_id").eq("id", currentPostId).single(),
+    ]);
 
     if (commentsRes.error || postRes.error) throw new Error("Gagal load data");
 
@@ -714,18 +733,19 @@ async function loadCommentsStructured() {
 
       // 2. Cek Balesan
       const childReplies = replies.filter((r) => String(r.parent_id) === String(parent.id));
-      
+
       if (childReplies.length > 0) {
         // --- TOMBOL SEMBUNYIKAN/LIHAT BALESAN ---
         const toggleBtn = document.createElement("div");
         toggleBtn.className = "view-replies-btn";
-        toggleBtn.style.cssText = "margin-left: 55px; font-size: 11px; color: #aaa; cursor: pointer; padding: 5px 0; font-weight: bold;";
+        toggleBtn.style.cssText =
+          "margin-left: 55px; font-size: 11px; color: #aaa; cursor: pointer; padding: 5px 0; font-weight: bold;";
         toggleBtn.innerHTML = `——— Lihat ${childReplies.length} balasan`;
 
         const replyWrap = document.createElement("div");
         replyWrap.className = "reply-group";
         replyWrap.style.display = "none"; // SEMBUNYIKAN DEFAULT
-        
+
         childReplies.forEach((reply) => {
           replyWrap.appendChild(createComment(reply, true, postOwnerId));
         });
@@ -734,7 +754,9 @@ async function loadCommentsStructured() {
         toggleBtn.addEventListener("click", () => {
           const isHidden = replyWrap.style.display === "none";
           replyWrap.style.display = isHidden ? "block" : "none";
-          toggleBtn.innerHTML = isHidden ? `——— Sembunyikan balasan` : `——— Lihat ${childReplies.length} balasan`;
+          toggleBtn.innerHTML = isHidden
+            ? `——— Sembunyikan balasan`
+            : `——— Lihat ${childReplies.length} balasan`;
         });
 
         wrap.appendChild(toggleBtn);
@@ -743,8 +765,8 @@ async function loadCommentsStructured() {
       list.appendChild(wrap);
     });
 
-    if (data.length === 0) list.innerHTML = "<li style='text-align:center; padding:20px; color:#aaa;'>Belum ada komentar.</li>";
-
+    if (data.length === 0)
+      list.innerHTML = "<li style='text-align:center; padding:20px; color:#aaa;'>Belum ada komentar.</li>";
   } catch (err) {
     console.error("Load Error:", err.message);
   }
@@ -760,8 +782,10 @@ function initLikeButtons() {
 
     newBtn.addEventListener("click", async () => {
       // 1. Ambil Auth User terbaru (mastiin dapet UUID, bukan "devhope")
-      const { data: { user: authUser } } = await supabaseClient.auth.getUser();
-      
+      const {
+        data: { user: authUser },
+      } = await supabaseClient.auth.getUser();
+
       if (!authUser) {
         openLogin();
         return;
@@ -785,21 +809,21 @@ function initLikeButtons() {
         if (span) span.textContent = Math.max(0, parseInt(span.textContent) - 1);
       } else {
         // LIKE
-        await supabaseClient.from("likes").insert({ 
-          post_id: postId, 
-          user_id: authUser.id 
+        await supabaseClient.from("likes").insert({
+          post_id: postId,
+          user_id: authUser.id,
         });
 
         // Ambil data pemilik post & profil penentu (lo)
         const [{ data: postData }, { data: senderProfile }] = await Promise.all([
           supabaseClient.from("posts").select("creator_id").eq("id", postId).single(),
-          supabaseClient.from("profiles").select("username").eq("id", authUser.id).single()
+          supabaseClient.from("profiles").select("username").eq("id", authUser.id).single(),
         ]);
 
         // Kirim Notifikasi pake authUser.id (PASTI UUID)
         await createNotification({
           user_id: postData?.creator_id,
-          actor_id: authUser.id, 
+          actor_id: authUser.id,
           post_id: postId,
           type: "like",
           message: `${senderProfile?.username || "Seseorang"} menyukai postingan Anda`,
@@ -918,8 +942,7 @@ function getUserBadge(role, isComment = false) {
   if (isComment && crowBadges[r]) {
     // Di komentar muncul gambar PNG Crown
     badge += `<img src="${crowBadges[r]}" style="width:18px;height:18px;margin-left:5px;vertical-align:middle;object-fit:contain;display:inline-block;" alt="${r}">`;
-  } 
-  else if (r === "verified" || (!isComment && crowBadges[r])) {
+  } else if (r === "verified" || (!isComment && crowBadges[r])) {
     // DI POSTINGAN: Crown 1, 2, 3 dipaksa jadi Centang Biru
     // DI KOMENTAR: Kalau cuma role 'verified', tetep centang biru
     badge += `
@@ -992,11 +1015,11 @@ function initCloseButtons() {
   });
 
   commentModal?.addEventListener("click", (e) => {
-  if (commentBox && !commentBox.contains(e.target)) {
-    commentModal.classList.remove("active");
-    resetReplyState();
-  }
-});
+    if (commentBox && !commentBox.contains(e.target)) {
+      commentModal.classList.remove("active");
+      resetReplyState();
+    }
+  });
 
   document.querySelector(".close-login")?.addEventListener("click", () => {
     const loginPopup = document.getElementById("loginPopup");
@@ -1020,39 +1043,42 @@ function initRealtime() {
   supabaseClient
     .channel("comments-live")
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "comments" }, async (payload) => {
-        await updateCommentCount(payload.new.post_id);
-        if (payload.new.post_id == currentPostId) await loadCommentsStructured();
-    }).subscribe();
+      await updateCommentCount(payload.new.post_id);
+      if (payload.new.post_id == currentPostId) await loadCommentsStructured();
+    })
+    .subscribe();
 
   // 2. Monitor Like
   supabaseClient
     .channel("likes-live")
     .on("postgres_changes", { event: "*", schema: "public", table: "likes" }, async () => {
-        await loadLikes();
-    }).subscribe();
+      await loadLikes();
+    })
+    .subscribe();
 
   // 3. MONITOR PERUBAHAN PROFILE (Agresif Mode)
   supabaseClient
     .channel("profiles-role-update")
     .on("postgres_changes", { event: "UPDATE", schema: "public", table: "profiles" }, (payload) => {
-        console.log("🔔 Profile Update Detected!", payload);
-        
-        // Ambil kategori yang lagi aktif sekarang
-        const activeNav = document.querySelector(".nav-item.active");
-        const currentCat = activeNav ? activeNav.getAttribute("data-category") : "all";
-        
-        // REFRESH POSTS LANGSUNG
-        // Kita kasih delay 300ms biar database kelar urusannya dulu
-        setTimeout(() => {
-          fetchPosts(currentCat);
-          
-          // Kalau user yang login adalah lo sendiri, update UI admin juga
-          if (currentUser && payload.new && payload.new.id === currentUser.id) {
-            currentUser.role = payload.new.role;
-            protectAdminUI();
-          }
-        }, 300);
-    }).subscribe();
+      console.log("🔔 Profile Update Detected!", payload);
+
+      // Ambil kategori yang lagi aktif sekarang
+      const activeNav = document.querySelector(".nav-item.active");
+      const currentCat = activeNav ? activeNav.getAttribute("data-category") : "all";
+
+      // REFRESH POSTS LANGSUNG
+      // Kita kasih delay 300ms biar database kelar urusannya dulu
+      setTimeout(() => {
+        fetchPosts(currentCat);
+
+        // Kalau user yang login adalah lo sendiri, update UI admin juga
+        if (currentUser && payload.new && payload.new.id === currentUser.id) {
+          currentUser.role = payload.new.role;
+          protectAdminUI();
+        }
+      }, 300);
+    })
+    .subscribe();
 }
 
 function triggerGiftAnimation(giftImage) {
@@ -1060,7 +1086,8 @@ function triggerGiftAnimation(giftImage) {
   if (!container) return;
   container.innerHTML = "";
 
-  for (let i = 0; i < 3; i++) { // tampilkan 3 gambar sekaligus
+  for (let i = 0; i < 3; i++) {
+    // tampilkan 3 gambar sekaligus
     const img = document.createElement("img");
     img.src = giftImage; // <-- tampilkan gift sesuai pilihan
     img.style.position = "absolute";
@@ -1086,13 +1113,30 @@ function triggerGiftAnimation(giftImage) {
 
   // Confetti tetap jalan
   const end = Date.now() + 1000;
-  const colors = ['#ffffff', '#FFD700', '#fff9c4', '#F0F0F0'];
+  const colors = ["#ffffff", "#FFD700", "#fff9c4", "#F0F0F0"];
   (function frame() {
-    confetti({ particleCount: 15, angle: 60, spread: 70, origin: { x: 0.5, y: 0.5 }, colors, startVelocity: 60, gravity: 0.5 });
-    confetti({ particleCount: 15, angle: 120, spread: 70, origin: { x: 0.5, y: 0.5 }, colors, startVelocity: 60, gravity: 0.5 });
+    confetti({
+      particleCount: 15,
+      angle: 60,
+      spread: 70,
+      origin: { x: 0.5, y: 0.5 },
+      colors,
+      startVelocity: 60,
+      gravity: 0.5,
+    });
+    confetti({
+      particleCount: 15,
+      angle: 120,
+      spread: 70,
+      origin: { x: 0.5, y: 0.5 },
+      colors,
+      startVelocity: 60,
+      gravity: 0.5,
+    });
     if (Date.now() < end) requestAnimationFrame(frame);
-  }());
+  })();
 }
+
 // =======================
 // POST MODAL + UPLOAD SYSTEM
 // =======================
@@ -1111,7 +1155,9 @@ function initPostModal() {
   if (!modal || !form) return;
 
   openBtn?.addEventListener("click", async () => {
-    const { data: { user } } = await supabaseClient.auth.getUser();
+    const {
+      data: { user },
+    } = await supabaseClient.auth.getUser();
     if (!user) {
       openLogin();
       return;
@@ -1161,9 +1207,9 @@ function initPostModal() {
   });
 
   form.addEventListener("submit", handlePostSubmit);
-  
+
   // Inisialisasi dropdown kategori custom
-  setupCustomCategory(); 
+  setupCustomCategory();
 }
 
 function closePostModal() {
@@ -1197,7 +1243,7 @@ function closePostModal() {
   const hiddenInput = document.getElementById("postCategory");
   if (displayText) displayText.innerText = "Pilih kategori";
   if (hiddenInput) hiddenInput.value = "";
-  document.querySelectorAll(".option-item").forEach(o => o.classList.remove("selected"));
+  document.querySelectorAll(".option-item").forEach((o) => o.classList.remove("selected"));
 }
 
 function setupCustomCategory() {
@@ -1218,7 +1264,7 @@ function setupCustomCategory() {
     dropdown.classList.toggle("active");
   };
 
-  options.forEach(opt => {
+  options.forEach((opt) => {
     opt.onclick = (e) => {
       e.stopPropagation();
       const val = opt.getAttribute("data-value");
@@ -1227,9 +1273,9 @@ function setupCustomCategory() {
       displayText.innerText = text;
       hiddenInput.value = val;
 
-      options.forEach(o => o.classList.remove("selected"));
+      options.forEach((o) => o.classList.remove("selected"));
       opt.classList.add("selected");
-      
+
       dropdown.classList.remove("active");
     };
   });
@@ -1242,17 +1288,16 @@ function setupCustomCategory() {
   });
 }
 
-
 async function uploadImageToCloudinary(file) {
   const formData = new FormData();
   formData.append("file", file);
   formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
   formData.append("folder", "creator-posts");
 
-  const response = await fetch(
-    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-    { method: "POST", body: formData }
-  );
+  const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+    method: "POST",
+    body: formData,
+  });
 
   const data = await response.json();
   if (!response.ok) throw new Error(data?.error?.message || "Upload Cloudinary gagal");
@@ -1274,7 +1319,9 @@ async function handlePostSubmit(e) {
     return;
   }
 
-  const { data: { user: authUser } } = await supabaseClient.auth.getUser();
+  const {
+    data: { user: authUser },
+  } = await supabaseClient.auth.getUser();
   if (!authUser) {
     openLogin();
     return;
@@ -1284,8 +1331,12 @@ async function handlePostSubmit(e) {
   submitBtn.textContent = "Mengupload...";
 
   try {
-    const { data: profile } = await supabaseClient.from("profiles").select("username").eq("id", authUser.id).single();
-    
+    const { data: profile } = await supabaseClient
+      .from("profiles")
+      .select("username")
+      .eq("id", authUser.id)
+      .single();
+
     // Cek limit pending max 3 biar gak spam admin
     const { count: pendingCount } = await supabaseClient
       .from("posts")
@@ -1306,7 +1357,7 @@ async function handlePostSubmit(e) {
       category: category,
       image_url: cloudinaryData.secure_url,
       cloudinary_public_id: cloudinaryData.public_id,
-      status: "pending"
+      status: "pending",
     });
 
     if (insertError) throw insertError;
@@ -1323,4 +1374,3 @@ async function handlePostSubmit(e) {
     }
   }
 }
- 

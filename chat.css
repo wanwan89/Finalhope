@@ -1,9 +1,10 @@
 /* --- Base Styles --- */
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   height: 100%;
-  font-family: 'Poppins', sans-serif;
+  font-family: "Poppins", sans-serif;
   background: #e5ddd5;
   display: flex;
   flex-direction: column;
@@ -15,7 +16,7 @@ html, body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background-image: url('chat.png');
+  background-image: url("chat.png");
   background-size: cover;
   background-position: center;
   position: relative;
@@ -28,7 +29,7 @@ html, body {
   align-items: center;
   padding: 0 16px;
   /* Diubah menjadi hitam dengan transparansi 0.9 agar tetap konsisten dengan gaya sebelumnya */
-  background: rgba(0, 0, 0, 0.9); 
+  background: rgba(0, 0, 0, 0.9);
   color: white;
   font-weight: 600;
   font-size: 16px;
@@ -194,7 +195,8 @@ html, body {
 }
 
 /* --- Badges & Icons --- */
-.badge, .admin-badge {
+.badge,
+.admin-badge {
   font-size: 7px;
   background: #4facfe;
   color: white;
@@ -251,9 +253,16 @@ html, body {
   transition: all 0.3s ease-in-out;
 }
 
-.hamburger-btn.active .hamburger-line:nth-child(1) { transform: translateY(8px) rotate(45deg); }
-.hamburger-btn.active .hamburger-line:nth-child(2) { opacity: 0; transform: translateX(-10px); }
-.hamburger-btn.active .hamburger-line:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
+.hamburger-btn.active .hamburger-line:nth-child(1) {
+  transform: translateY(8px) rotate(45deg);
+}
+.hamburger-btn.active .hamburger-line:nth-child(2) {
+  opacity: 0;
+  transform: translateX(-10px);
+}
+.hamburger-btn.active .hamburger-line:nth-child(3) {
+  transform: translateY(-8px) rotate(-45deg);
+}
 
 .sidebar {
   position: fixed;
@@ -301,13 +310,15 @@ html, body {
 .reaction-menu {
   position: absolute;
   background: white;
-  padding: 5px 10px;
-  border-radius: 20px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  padding: 8px 12px;
+  border-radius: 30px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2); /* Bayangan lebih tebel biar pop out */
   display: none;
-  gap: 10px;
-  z-index: 10000;
-  animation: popIn 0.2s ease-out;
+  gap: 12px;
+  z-index: 10006;
+  border: 1px solid #eee;
+  transform: translateX(-50%); /* Kunci biar dia center pas muncul */
+  animation: reactionPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .reaction-emoji {
@@ -316,7 +327,9 @@ html, body {
   transition: transform 0.1s;
 }
 
-.reaction-emoji:hover { transform: scale(1.3); }
+.reaction-emoji:hover {
+  transform: scale(1.3);
+}
 
 .message-reactions {
   display: flex;
@@ -377,23 +390,68 @@ html, body {
   opacity: 0.5;
 }
 
-.reply-preview-box {
-  display: none;
-  background: white;
-  padding: 6px 10px;
-  font-size: 12px;
-  border-left: 3px solid #2196f3;
-  color: #444;
+/* Container Utama Preview Balasan (Wajib Relative) */
+#reply-preview-box {
+  display: none; /* Sembunyi dulu */
+  position: relative;
+  width: 100%;
+  background: #f0f0f0;
+  border-left: 4px solid #0088cc;
+  padding: 8px 12px;
+  box-sizing: border-box;
   align-items: center;
-  gap: 6px;
+  justify-content: space-between;
+  gap: 10px;
+  z-index: 10;
 }
 
-.reply-preview-box span { opacity: 0.7; }
-.reply-preview-box strong { font-weight: 600; }
+/* Bungkus Teks Balasan biar nggak numpuk dan ada titik-titik (...) */
+.reply-content-wrapper {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Judul "Membalas nama" */
+.reply-title {
+  font-size: 11px;
+  color: #0088cc;
+  font-weight: bold;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Isi pesan yang dibalas */
+.reply-text-preview {
+  font-size: 12px;
+  color: #666;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Tombol X Merah Gede & Presisi */
+.close-reply-btn {
+  font-size: 24px; /* Gedein dikit biar gampang diklik */
+  color: #ff4757; /* Merah */
+  font-weight: bold;
+  cursor: pointer;
+  flex-shrink: 0; /* Jangan biarkan X menyusut */
+  padding: 0 5px;
+  line-height: 1;
+}
 
 /* --- Special Modes --- */
-.private-mode .chat-message.self { background: rgba(162, 155, 254, 0.9); }
-.private-mode .chat-message.other { background: rgba(224, 231, 255, 0.9); }
+.private-mode .chat-message.self {
+  background: rgba(162, 155, 254, 0.9);
+}
+.private-mode .chat-message.other {
+  background: rgba(224, 231, 255, 0.9);
+}
 .private-mode.telegram-chat {
   background-image: none;
   background-color: #f0f2f5;
@@ -419,15 +477,22 @@ html, body {
   margin: 10px auto;
 }
 
-.cta:focus { outline: none; }
+.cta:focus {
+  outline: none;
+}
 .cta:hover {
   transition: 0.5s;
   box-shadow: 7px 7px 0 #869da6;
   background: #0077b5;
 }
-.cta:hover .second { margin-right: 15px; }
+.cta:hover .second {
+  margin-right: 15px;
+}
 
-.cta .span { transform: skewX(15deg); display: inline-block; }
+.cta .span {
+  transform: skewX(15deg);
+  display: inline-block;
+}
 .cta .second {
   transition: 0.5s;
   margin-left: 15px;
@@ -444,11 +509,17 @@ html, body {
   display: none;
 }
 
-.chat-message.self:hover .delete-btn { display: inline; }
-.text.deleted { font-style: italic; color: #aaa !important; }
+.chat-message.self:hover .delete-btn {
+  display: inline;
+}
+.text.deleted {
+  font-style: italic;
+  color: #aaa !important;
+}
 
 /* --- Overlays & Modals --- */
-.delete-overlay, .searching-overlay {
+.delete-overlay,
+.searching-overlay {
   position: fixed;
   inset: 0;
   display: none;
@@ -457,17 +528,90 @@ html, body {
   z-index: 9999;
 }
 
-.delete-overlay { background: rgba(0, 0, 0, 0.5); }
-.searching-overlay { background: rgba(0, 0, 0, 0.8); flex-direction: column; color: white; }
-
-.delete-menu {
-  background: white;
+/* --- Overlay Background (Efek Blur Tetap Ada) --- */
+.delete-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 31, 63, 0.4); /* Biru gelap transparan */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 10005;
   padding: 20px;
-  border-radius: 15px;
-  text-align: center;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  animation: fadeIn 0.2s ease-out;
 }
 
+/* --- Kartu Modal --- */
+.delete-menu {
+  background: #ffffff;
+  width: 100%;
+  max-width: 280px;
+  padding: 25px;
+  border-radius: 24px;
+  text-align: center;
+  box-shadow: 0 15px 35px rgba(0, 136, 204, 0.2); /* Shadow biru tipis */
+  animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.delete-menu p {
+  font-size: 16px;
+  font-weight: 700;
+  color: #004466; /* Biru gelap */
+  margin: 0 0 20px 0;
+}
+
+/* Container Tombol */
+.delete-menu-btns {
+  display: flex;
+  gap: 12px;
+}
+
+.delete-menu button {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+/* --- Tombol Hapus (Sekarang Biru HopeTalk) --- */
+#confirm-delete {
+  background: linear-gradient(135deg, #0088cc, #00d2ff);
+  color: white;
+  box-shadow: 0 4px 15px rgba(0, 136, 204, 0.3);
+}
+
+#confirm-delete:active {
+  transform: scale(0.95);
+  filter: brightness(0.9);
+}
+
+/* --- Tombol Batal (Abu-abu Kebiruan) --- */
+.btn-cancel {
+  background: #eef2f5;
+  color: #708090;
+}
+
+.btn-cancel:active {
+  transform: scale(0.95);
+  background: #e1e8ed;
+}
+
+/* Keyframes */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes popIn {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
 
 .online-dot {
   height: 8px;
@@ -489,35 +633,88 @@ html, body {
 
 /* --- Animations --- */
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes pulse-dot {
-  0% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(0.8); }
-  100% { opacity: 1; transform: scale(1); }
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @keyframes popIn {
-  0% { transform: scale(0.5); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 @keyframes color_anim {
-  0%, 100% { fill: white; }
-  50% { fill: #0088cc; }
+  0%,
+  100% {
+    fill: white;
+  }
+  50% {
+    fill: #0088cc;
+  }
 }
 
-@keyframes spin { to { transform: rotate(360deg); } }
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
 
-.one { transition: 0.4s; transform: translateX(-60%); }
-.two { transition: 0.5s; transform: translateX(-30%); }
-.cta:hover .one, .cta:hover .two { transform: translateX(0%); }
-.cta:hover .one { animation: color_anim 1s infinite 0.6s; }
-.cta:hover .two { animation: color_anim 1s infinite 0.4s; }
-.cta:hover .three { animation: color_anim 1s infinite 0.2s; }
+.one {
+  transition: 0.4s;
+  transform: translateX(-60%);
+}
+.two {
+  transition: 0.5s;
+  transform: translateX(-30%);
+}
+.cta:hover .one,
+.cta:hover .two {
+  transform: translateX(0%);
+}
+.cta:hover .one {
+  animation: color_anim 1s infinite 0.6s;
+}
+.cta:hover .two {
+  animation: color_anim 1s infinite 0.4s;
+}
+.cta:hover .three {
+  animation: color_anim 1s infinite 0.2s;
+}
 
 .radar {
   width: 80px;
@@ -530,7 +727,7 @@ html, body {
 }
 
 .searching-text {
-  font-family: 'Poppins', sans-serif;
+  font-family: "Poppins", sans-serif;
   letter-spacing: 2px;
   font-weight: 600;
   animation: pulse 1.5s infinite;
@@ -558,19 +755,26 @@ html, body {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .searching-text {
-  font-family: 'Poppins', sans-serif;
+  font-family: "Poppins", sans-serif;
   letter-spacing: 2px;
   font-weight: 600;
   animation: pulse 1.5s infinite;
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
 }
 #chat-messages {
   display: flex;
@@ -617,7 +821,9 @@ html, body {
 }
 
 @keyframes sendingBlink {
-  0%, 80%, 100% {
+  0%,
+  80%,
+  100% {
     opacity: 0.25;
     transform: translateY(0);
   }
@@ -659,7 +865,9 @@ html, body {
 }
 
 @keyframes bounceDot {
-  0%, 80%, 100% {
+  0%,
+  80%,
+  100% {
     transform: scale(0.7);
     opacity: 0.5;
   }
@@ -708,22 +916,22 @@ html, body {
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.35);
+  background: rgba(255, 255, 255, 0.35);
   flex-shrink: 0;
 }
 
 .skeleton-bubble {
-  background: rgba(255,255,255,0.55);
+  background: rgba(255, 255, 255, 0.55);
   border-radius: 16px 16px 16px 6px;
   padding: 10px 12px;
   min-width: 110px;
   max-width: 220px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   backdrop-filter: blur(3px);
 }
 
 .skeleton-bubble.me {
-  background: rgba(220,248,198,0.85);
+  background: rgba(220, 248, 198, 0.85);
   border-radius: 16px 16px 6px 16px;
 }
 
@@ -731,7 +939,12 @@ html, body {
   height: 8px;
   border-radius: 999px;
   margin-bottom: 8px;
-  background: linear-gradient(90deg, rgba(255,255,255,0.35), rgba(255,255,255,0.85), rgba(255,255,255,0.35));
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.35),
+    rgba(255, 255, 255, 0.85),
+    rgba(255, 255, 255, 0.35)
+  );
   background-size: 200% 100%;
   animation: shimmerMove 1.2s linear infinite;
 }
@@ -740,11 +953,21 @@ html, body {
   margin-bottom: 0;
 }
 
-.w1 { width: 130px; }
-.w2 { width: 95px; }
-.w3 { width: 60px; }
-.w4 { width: 120px; }
-.w5 { width: 70px; }
+.w1 {
+  width: 130px;
+}
+.w2 {
+  width: 95px;
+}
+.w3 {
+  width: 60px;
+}
+.w4 {
+  width: 120px;
+}
+.w5 {
+  width: 70px;
+}
 
 .typing-bubble {
   display: flex;
@@ -782,18 +1005,29 @@ html, body {
 }
 
 .shimmer {
-  background: linear-gradient(90deg, rgba(255,255,255,0.35), rgba(255,255,255,0.85), rgba(255,255,255,0.35));
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.35),
+    rgba(255, 255, 255, 0.85),
+    rgba(255, 255, 255, 0.35)
+  );
   background-size: 200% 100%;
   animation: shimmerMove 1.2s linear infinite;
 }
 
 @keyframes shimmerMove {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 @keyframes typingBounce {
-  0%, 80%, 100% {
+  0%,
+  80%,
+  100% {
     transform: translateY(0);
     opacity: 0.45;
   }
@@ -830,88 +1064,97 @@ html, body {
 }
 
 @keyframes bounce {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.2); }
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
 }
 /* Container Utama */
 .chat-input-container {
-    display: flex;
-    align-items: flex-end;
-    padding: 10px 10px 20px 10px;
-    gap: 8px;
-    background: #f0f2f5; /* Warna background chat */
-    width: 100%;
-    box-sizing: border-box;
+  display: flex;
+  align-items: flex-end;
+  padding: 10px 10px 20px 10px;
+  gap: 8px;
+  background: #f0f2f5; /* Warna background chat */
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Kapsul Putih */
 .input-group-wrapper {
-    display: flex;
-    align-items: center;
-    background: #ffffff;
-    border-radius: 24px;
-    flex: 1;
-    padding: 0 12px;
-    min-height: 48px;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border-radius: 24px;
+  flex: 1;
+  padding: 0 12px;
+  min-height: 48px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  position: relative; 
+  overflow: hidden;
 }
+
 
 /* Tombol Emoji */
 #sticker-btn {
-    background: none;
-    border: none;
-    color: #858a8d;
-    font-size: 24px;
-    margin-right: 10px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
+  background: none;
+  border: none;
+  color: #858a8d;
+  font-size: 24px;
+  margin-right: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
 }
 
 /* Input Area */
 #chat-input {
-    flex: 1;
-    border: none !important;
-    outline: none !important;
-    padding: 12px 0;
-    font-size: 16px;
-    max-height: 120px;
-    resize: none;
-    background: transparent;
+  flex: 1;
+  border: none !important;
+  outline: none !important;
+  padding: 12px 0;
+  font-size: 16px;
+  max-height: 120px;
+  resize: none;
+  background: transparent;
 }
 
 /* Tombol Action Bulat */
 #action-btn {
-    width: 48px;
-    height: 48px;
-    background-color: #0088cc;
-    border-radius: 50%;
-    border: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0; /* KUNCI: Biar gak gepeng */
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  width: 48px;
+  height: 48px;
+  background-color: #0088cc;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0; /* KUNCI: Biar gak gepeng */
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 /* Icon Morphing Logic */
 .icon-stack {
-    position: relative;
-    width: 24px;
-    height: 24px;
+  position: relative;
+  width: 24px;
+  height: 24px;
 }
 
-.svg-send, .svg-mic {
-    position: absolute;
-    inset: 0;
-    transition: all 0.3s ease;
+.svg-send,
+.svg-mic {
+  position: absolute;
+  inset: 0;
+  transition: all 0.3s ease;
 }
 
 .svg-mic {
-    opacity: 0;
-    transform: scale(0.5) rotate(-45deg);
+  opacity: 0;
+  transform: scale(0.5) rotate(-45deg);
 }
 
 /* KONDISI SAAT RECORDING (Transisi) */
@@ -919,115 +1162,197 @@ html, body {
 
 /* 1. Fix Icon & Tombol Recording */
 #action-btn.is-recording {
-    background-color: #ff4757;
-    transform: scale(1.1);
+  background-color: #ff4757;
+  transform: scale(1.1);
 }
 
 #action-btn.is-recording .svg-send {
-    opacity: 0;
-    transform: scale(0) rotate(45deg);
+  opacity: 0;
+  transform: scale(0) rotate(45deg);
 }
 
 #action-btn.is-recording .svg-mic {
-    opacity: 1;
-    transform: scale(1) rotate(0);
+  opacity: 1;
+  transform: scale(1) rotate(0);
 }
 
 /* 2. Fix Overlay VN & Animasi */
 #vn-overlay {
-    position: absolute;
-    inset: 0;
-    background: #fff;
-    display: none;
-    align-items: center;
-    padding: 0 15px;
-    border-radius: 24px;
-    z-index: 10;
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  display: none;
+  align-items: center;
+  padding: 0 15px;
+  border-radius: 24px;
+  z-index: 10;
 }
 
-@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-@keyframes slide-text { 0% { transform: translateX(0); } 50% { transform: translateX(-5px); } 100% { transform: translateX(0); } }
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+@keyframes slide-text {
+  0% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-5px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
 
 /* 3. Style Voice Note HopeHype (Biru Bulat) */
 .vn-custom-player {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: rgba(0, 0, 0, 0.05);
-    padding: 8px 12px;
-    border-radius: 20px;
-    min-width: 190px;
-    margin: 5px 0;
-    box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 8px 12px;
+  border-radius: 20px;
+  min-width: 190px;
+  margin: 5px 0;
+  box-sizing: border-box;
 }
 
 .vn-play-btn {
-    width: 32px !important;
-    height: 32px !important;
-    border-radius: 50% !important;
-    border: none !important;
-    background: #00d2ff !important; /* Biru khas HopeHype */
-    color: white !important;
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    flex-shrink: 0;
-    padding: 0;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  border: none !important;
+  background: #00d2ff !important; /* Biru khas HopeHype */
+  color: white !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
 }
 
 .vn-play-btn svg {
-    width: 18px;
-    height: 18px;
-    fill: white;
+  width: 18px;
+  height: 18px;
+  fill: white;
 }
 
 .vn-waveform {
-    display: flex;
-    align-items: center;
-    gap: 3px;
-    height: 20px;
-    flex-grow: 1;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 20px;
+  flex-grow: 1;
 }
 
 .vn-waveform .bar {
-    width: 3px;
-    height: 12px;
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 2px;
-    display: inline-block;
+  width: 3px;
+  height: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+  display: inline-block;
 }
 
 /* Variasi Tinggi Garis */
-.vn-waveform .bar:nth-child(odd) { height: 18px; }
-.vn-waveform .bar:nth-child(3n) { height: 8px; }
+.vn-waveform .bar:nth-child(odd) {
+  height: 18px;
+}
+.vn-waveform .bar:nth-child(3n) {
+  height: 8px;
+}
 
 .vn-time {
-    font-size: 10px;
-    font-weight: 600;
-    color: #666;
-    white-space: nowrap;
-    margin-left: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #666;
+  white-space: nowrap;
+  margin-left: 5px;
 }
 
 /* Animasi pas Play */
 .playing .bar {
-    animation: waveAnim 0.6s infinite alternate;
-    background: #00d2ff;
+  animation: waveAnim 0.6s infinite alternate;
+  background: #00d2ff;
 }
 
 @keyframes waveAnim {
-    from { transform: scaleY(0.8); }
-    to { transform: scaleY(1.4); }
+  from {
+    transform: scaleY(0.8);
+  }
+  to {
+    transform: scaleY(1.4);
+  }
 }
 /* Menghilangkan kotak biru/abu-abu saat elemen diklik di mobile */
 * {
-    -webkit-tap-highlight-color: transparent;
-    outline: none;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
 }
 
 /* Khusus untuk tombol atau menu agar tidak ada outline saat difokuskan */
-.menu-item-tiktok, .btn, .tab, button {
-    -webkit-tap-highlight-color: rgba(0,0,0,0);
-    user-select: none; /* Biar teksnya nggak gak sengaja kepilih/keblok */
+.menu-item-tiktok,
+.btn,
+.tab,
+button {
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+  user-select: none; /* Biar teksnya nggak gak sengaja kepilih/keblok */
+}
+/* Container Menu Emoji Melayang */
+.reaction-menu {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 8px 12px;
+  border-radius: 30px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  display: none; /* Sembunyi dulu */
+  gap: 12px;
+  z-index: 10006;
+  border: 1px solid rgba(255,255,255,0.3);
+  animation: reactionPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  pointer-events: auto;
+}
+
+.reaction-emoji {
+  font-size: 24px;
+  cursor: pointer;
+  transition: transform 0.2s;
+  user-select: none;
+}
+
+.reaction-emoji:hover {
+  transform: scale(1.4) translateY(-5px);
+}
+
+/* Badge Reaction ala WhatsApp (HopeTalk Blue Style) */
+.message-reactions {
+  position: absolute;
+  /* Jaga posisi vertikal tetep overlap di garis bawah bubble */
+  bottom: -10px; 
+  
+  /* --- INI KUNCINYA GANTI DI SINI --- */
+  right: auto;   /* Pastikan 'right' dinonaktifkan kalau sebelumnya ada */
+  left: 10px;    /* Anchoring ke pojok kiri, kasih jarak dikit dari pinggir bubble */
+  /* ----------------------------------- */
+
+/* Animasi pas muncul (Pop Effect) */
+.message-reactions {
+  animation: badgePop 0.3s ease-out;
+}
+
+@keyframes badgePop {
+  0% { transform: scale(0); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Tambahkan ini biar bubble chat gak nutupin emojinya */
+.chat-message .content {
+  margin-bottom: 5px; 
 }
