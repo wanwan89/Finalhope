@@ -16,17 +16,45 @@ body {
   min-height: 100dvh;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: center; /* Kembalikan ke center */
+  padding-top: 100px; /* INI KUNCINYA: Memberikan ruang 100px di atas untuk iklan. (Angkanya bisa kamu besarkan misal jadi 120px kalau iklannya lebih lebar) */
   background: #8ea2db;
   overflow-x: hidden;
+  transition: background-color 0.4s ease, color 0.4s ease;
 }
 
-/* GRID BACKGROUND */
+/* ========================================= */
+/* GRID BACKGROUND DENGAN TRANSISI GELEMBUNG */
+/* ========================================= */
 .grid-bg {
   position: fixed;
   inset: 0;
-  background: url("back.png") center/cover no-repeat;
+  /* GANTI KE BIRU VIBRANT PILIHANMU */
+  background-color: #0b84e3; 
   z-index: -1;
+  overflow: hidden; /* Mencegah layar bisa di-scroll ke samping */
+}
+
+/* Elemen 'bayangan' untuk warna dark mode-nya (Tetap sama) */
+.grid-bg::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background-color: #1f2335; /* Warna biru gelap khas dark mode */
+  border-radius: 50%; 
+  transform: translate(-50%, -50%); 
+  
+  transition: width 0.6s cubic-bezier(0.25, 1, 0.5, 1), 
+              height 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* Saat mode dark aktif (Tetap sama) */
+body.dark .grid-bg::before {
+  width: 300vmax; 
+  height: 300vmax;
 }
 
 /* CONTAINER */
@@ -303,33 +331,51 @@ header {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* DARK MODE */
+/* ============================= */
+/* FIX POSISI DARK MODE (PASTE INI) */
+/* ============================= */
+
 body.dark {
   background: #1f2335;
 }
 
+/* Update bagian ini di CSS kamu */
+
 body.dark .container {
   background: #2b3050;
   color: white;
+  /* Tambahkan ini agar bayangan tetap ada & ukuran tidak geser */
+  box-shadow: 10px 10px 0px #00000020; 
+}
+
+body.dark .icon.profile {
+  /* Pastikan border tetap 2px meski di mode gelap */
+  border: 2px solid #000; 
+  background: #000; 
 }
 
 body.dark .recent-card {
   background: #3a3f63;
+  /* Samakan border & shadow dengan mode terang agar tidak 'nyusut' */
+  border: 2px solid #000;
+  box-shadow: 5px 5px 0px #00000030;
 }
 
-.icon.profile {
-  background: ###000000;
+body.dark .search {
+  /* Tambahkan ini agar search bar tidak berubah ukurannya */
   border: 2px solid #000;
 }
 
-.icon.profile span.material-icons {
-  color: #1e223d;
-  font-size: 22px;
-  display: block;
+body.dark .switch {
+  /* Pastikan variabel warna berubah tapi ukuran box-shadow tetap 4px */
+  --bg-color: #1e1e1e;
+  --main-color: #fff;
 }
 
-body.dark .icon.profile span.material-icons {
-  color: #121010;
+/* Tambahkan ini untuk mengunci ukuran slider */
+body.dark .slider {
+  box-shadow: 4px 4px var(--main-color);
+  border: 2px solid var(--main-color);
 }
 
 /* LINK RESET */
@@ -2116,4 +2162,52 @@ body.dark #notificationList {
 button {
   -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
   user-select: none; /* Biar teksnya nggak gak sengaja kepilih/keblok */
+}
+/* =========================
+   AD BANNER (IKLAN)
+========================= */
+.ad-banner-container {
+  position: fixed; /* Bikin posisinya selalu di atas */
+  top: 10px; /* Jarak 10px dari ujung atas layar */
+  left: 50%;
+  transform: translateX(-50%); /* Trik agar posisinya persis di tengah */
+  
+  width: 380px; /* Lebarnya disamakan dengan box menu utama kamu */
+  max-width: 95%; /* Biar aman kalau dibuka di HP yang layarnya kecil banget */
+  height: 80px; /* Tingginya pas untuk mengisi area kosong 100px yang kita buat tadi */
+  
+  border: 2px solid #000;
+  border-radius: 16px;
+  box-shadow: 4px 4px 0px #00000030;
+  overflow: hidden; /* Penting! Menyembunyikan gambar yang sedang tidak tampil */
+  z-index: 9999;
+  background: #fff;
+}
+
+/* Wadah panjang yang menampung ke-3 gambar */
+.ad-slider {
+  display: flex;
+  width: 300%; /* Lebar 300% karena ada 3 gambar (3 x 100%) */
+  height: 100%;
+  animation: slideAd 9s infinite; /* Total 9 detik untuk memutar 3 gambar, terus berulang (infinite) */
+}
+
+/* Tiap gambar iklan */
+.ad-slide {
+  width: 33.333%; /* Membagi rata lebar untuk 3 gambar */
+  height: 100%;
+  object-fit: cover; /* Agar gambar tidak gepeng */
+}
+
+/* Animasi geser otomatis */
+@keyframes slideAd {
+  0%, 25%   { transform: translateX(0); }         /* Gambar 1 diam */
+  33%, 58%  { transform: translateX(-33.333%); }  /* Geser ke Gambar 2, lalu diam */
+  66%, 91%  { transform: translateX(-66.666%); }  /* Geser ke Gambar 3, lalu diam */
+  100%      { transform: translateX(0); }         /* Geser balik ke Gambar 1 */
+}
+
+/* Sesuaikan border kalau masuk Dark Mode biar tetep rapi */
+body.dark .ad-banner-container {
+  border: 2px solid #fff;
 }
