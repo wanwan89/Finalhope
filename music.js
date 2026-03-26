@@ -81,16 +81,15 @@ async function loadMusicLibrary() {
 
   const { data, error } = await _supabase
     .from("songs")
-    .select(
-      `
-            *,
-            comments(count),
-            likes!song_id(count),
-            user_liked:likes!song_id(id)
-        `
-    )
+    .select(`
+        *,
+        comments(count),
+        likes(count),
+        user_liked:likes(user_id)
+    `)
     .eq("status", "approved")
-    .eq("likes.user_id", user?.id || "00000000-0000-0000-0000-000000000000")
+    // Filter INI yang dibenarkan: Terapkan filter HANYA ke alias "user_liked"
+    .eq("user_liked.user_id", user?.id || "00000000-0000-0000-0000-000000000000")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -101,8 +100,8 @@ async function loadMusicLibrary() {
   allSongs = data.map((song) => ({
     ...song,
     comment_count: song.comments?.[0]?.count || 0,
-    like_count: song.likes?.[0]?.count || 0,
-    is_liked: song.user_liked && song.user_liked.length > 0,
+    like_count: song.likes?.[0]?.count || 0, // Sekarang ini menghitung total like se-dunia
+    is_liked: song.user_liked && song.user_liked.length > 0, // Ini baru mengecek user yang sedang login
   }));
 
   renderPlaylist(allSongs);
@@ -690,15 +689,17 @@ if (openUploadBtn) {
 const CLOUD_NAME = "dhhmkb8kl"; 
 const UPLOAD_PRESET = "hopehype_preset"; 
 
+// --- Fungsi Upload Cloudinary & Supabase ---
 window.handleUploadMusik = async function () {
   const title = document.getElementById("upTitle").value;
-  const artist = document.getElementById("upArtist").value;
+  // upArtist tidak lagi diambil dari inputan HTML
   const audioFile = document.getElementById("upAudioFile").files[0];
   const coverFile = document.getElementById("upCoverFile").files[0];
   const status = document.getElementById("uploadStatus");
 
-  if (!title || !artist || !audioFile || !coverFile) {
-    status.innerText = "Lengkapi data dulu bro!";
+  // Validasi tanpa mengecek artist
+  if (!title || !audioFile || !coverFile) {
+    status.innerText = "Lengkapi judul lagu, file audio, dan cover dulu bro!";
     return;
   }
 
@@ -706,7 +707,24 @@ window.handleUploadMusik = async function () {
     status.innerText = "Sedang mengupload... ☁️";
     document.getElementById("btnUpload").disabled = true;
 
-    const uploadFile = async (file, type) => {
+    // 1. Dapatkan user yang sedang login
+    const { data: { user }, error: authErr } = await _supabase.auth.getUser();
+    if (authErr || !user) throw new Error("Kamu harus login dulu!");
+
+    // 2. Ambil username dari tabel profiles
+    const { data: profile, error: profileErr } = await _supabase
+      .from("profiles")
+      .select("username")
+      .eq("id", user.id)
+      .single();
+
+    if (profileErr) throw new Error("Gagal mengambil data profil.");
+
+    // 3. Jadikan username sebagai artist (pakai "Unknown" jika kosong)
+    const artistName = profile?.username || "Unknown";
+
+    // Fungsi upload ke Cloudinary
+    const uploadFile = async (file) => {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("upload_preset", UPLOAD_PRESET);
@@ -721,14 +739,17 @@ window.handleUploadMusik = async function () {
       return data.secure_url;
     };
 
+    // Eksekusi upload file
     const audioUrl = await uploadFile(audioFile);
     const coverUrl = await uploadFile(coverFile);
 
+    // 4. Simpan ke Supabase dengan nama artist otomatis
     const { error } = await _supabase.from("songs").insert({
-      title,
-      artist,
+      title: title,
+      artist: artistName, // <--- Nama otomatis masuk ke sini
       audio_src: audioUrl,
       cover_url: coverUrl,
+      // (Bisa tambahkan user_id: user.id juga kalau di tabel songs kamu ada kolomnya)
     });
 
     if (error) throw error;

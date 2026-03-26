@@ -783,12 +783,14 @@ const initApp = async () => {
     await updateAuthMenu();
     await loadUser();
     await loadUnreadNotifications();
-    await subscribeNotifications(); // ✅ pastikan ini namanya benar
+    await loadUnreadChats(); // <--- TAMBAHKAN DI SINI
+    await subscribeNotifications(); 
     await checkPopup();
   } catch (err) {
     console.error("initApp error:", err);
   }
 };
+
 
 initApp();
 
@@ -911,6 +913,25 @@ let notifChannel = null;
 let currentUserId = null;
 let notificationsPaused = false;
 
+// ===== UPDATE HYPETALK BADGE =====
+function updateHopeTalkBadge(count) {
+  const badge = document.getElementById('hopeTalkBadge');
+  if (!badge) return; // Mencegah error jika elemen tidak ditemukan
+
+  if (count > 0) {
+    badge.textContent = count > 99 ? "99+" : String(count); // Menampilkan maksimal 99+
+    badge.style.display = 'flex';
+    
+    // Opsional: Tambahkan animasi kecil seperti notif bell kamu
+    badge.animate(
+      [{ transform: "translateY(-50%) scale(1)" }, { transform: "translateY(-50%) scale(1.3)" }, { transform: "translateY(-50%) scale(1)" }],
+      { duration: 300, easing: "ease-out" }
+    );
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
 // ===== UPDATE BADGE =====
 function updateNotifBadge(count) {
   if (!notifCountEl) return;
@@ -951,6 +972,58 @@ async function loadUnreadNotifications() {
     console.error("loadUnreadNotifications error:", err);
   }
 }
+
+// ===== LOAD UNREAD HYPETALK CHATS =====
+async function loadUnreadChats() {
+  try {
+    const { data: { user } } = await db.auth.getUser();
+    
+    if (!user) {
+      updateHopeTalkBadge(0);
+      return;
+    }
+
+    // Ambil waktu terakhir kali user buka chat dari memori browser
+    const lastRead = localStorage.getItem("lastReadHypetalk");
+
+    let query = db
+      .from("messages") 
+      .select("*", { count: "exact", head: true })
+      .neq("user_id", user.id); // Jangan hitung pesan kita sendiri
+
+    // Jika user pernah buka chat, hitung pesan yang masuk SETELAH waktu tersebut
+    if (lastRead) {
+      query = query.gt("created_at", lastRead); 
+    } else {
+      // Jika baru pertama kali buka web, hitung pesan yang statusnya 'sent'
+      query = query.eq("status", "sent");
+    }
+
+    const { count, error } = await query;
+
+    if (error) throw error;
+    
+    updateHopeTalkBadge(count || 0);
+
+  } catch (err) {
+    console.error("loadUnreadChats error:", err);
+  }
+}
+
+// ===== HILANGKAN BADGE SAAT HYPETALK DIKLIK =====
+const hopeTalkBoxElement = document.getElementById("hopeTalkBox");
+
+if (hopeTalkBoxElement) {
+  hopeTalkBoxElement.addEventListener("click", () => {
+    // Simpan waktu saat ini (format ISO agar cocok dengan Supabase)
+    const currentTime = new Date().toISOString();
+    localStorage.setItem("lastReadHypetalk", currentTime);
+    
+    // Sembunyikan badge secara instan sebelum pindah halaman
+    updateHopeTalkBadge(0); 
+  });
+}
+
 
 // ===== LOAD NOTIF LIST =====
 async function loadNotificationList() {

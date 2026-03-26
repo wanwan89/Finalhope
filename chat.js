@@ -643,6 +643,10 @@ async function loadMessages() {
 
   const start = Date.now();
 
+  // 1. Dapatkan waktu persis 24 jam yang lalu (format ISO)
+  const waktu24JamLalu = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+  // 2. Query ke Supabase dengan batasan waktu dan jumlah
   const { data, error } = await supabase
     .from("messages")
     .select(
@@ -653,9 +657,10 @@ async function loadMessages() {
     `
     )
     .eq("room_id", currentRoomId)
-    .order("created_at", { ascending: true });
-console.log("Data dari Supabase:", data); // Tambahin ini
-console.log("Error dari Supabase:", error); // Dan ini
+    .gte("created_at", waktu24JamLalu) // HANYA ambil pesan 24 jam terakhir
+    .order("created_at", { ascending: false }) // Ambil dari yang paling baru dulu
+    .limit(20); // BATASI maksimal 20 pesan
+
   // Biar loading keliatan smooth, ga langsung blink
   const elapsed = Date.now() - start;
   const minDelay = 700;
@@ -668,17 +673,7 @@ console.log("Error dari Supabase:", error); // Dan ini
     console.error(error);
 
     messagesEl.innerHTML = `
-      <div style="
-        display:flex;
-        flex-direction:column;
-        align-items:center;
-        justify-content:center;
-        gap:8px;
-        padding:40px 20px;
-        margin-top:20px;
-        color:#ff4d4f;
-        font-family:'Poppins', sans-serif;
-      ">
+      <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; padding:40px 20px; margin-top:20px; color:#ff4d4f; font-family:'Poppins', sans-serif;">
         <div style="font-size:26px;">⚠️</div>
         <div style="font-size:14px; font-weight:600;">Gagal memuat pesan</div>
         <div style="font-size:12px; color:#999;">Coba lagi sebentar ya...</div>
@@ -692,17 +687,7 @@ console.log("Error dari Supabase:", error); // Dan ini
 
   if (!data || data.length === 0) {
     messagesEl.innerHTML = `
-      <div style="
-        display:flex;
-        flex-direction:column;
-        align-items:center;
-        justify-content:center;
-        gap:8px;
-        padding:40px 20px;
-        margin-top:20px;
-        color:#8696a0;
-        font-family:'Poppins', sans-serif;
-      ">
+      <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; padding:40px 20px; margin-top:20px; color:#8696a0; font-family:'Poppins', sans-serif;">
         <div style="font-size:28px;">💬</div>
         <div style="font-size:14px; font-weight:600;">Belum ada pesan</div>
         <div style="font-size:12px;">Mulai percakapan dulu yuk</div>
@@ -712,10 +697,13 @@ console.log("Error dari Supabase:", error); // Dan ini
     return;
   }
 
-  data.forEach((msg) => renderMessage(msg));
+  // 3. Balikkan urutan array karena tadi kita ambil descending (agar yang terlama di atas)
+  const sortedData = data.reverse();
+  
+  // 4. Render pesan ke layar
+  sortedData.forEach((msg) => renderMessage(msg));
 
   setTimeout(scrollToBottom, 100);
-
   await markRoomAsRead();
 }
 
@@ -1115,18 +1103,21 @@ let isSidebarLoading = false;
 async function loadChatHistory() {
   const privateList = document.getElementById("private-chat-list");
   
-  // CEK KUNCI: Kalau lagi loading, jangan masuk lagi
   if (!privateList || !currentUser || isSidebarLoading) return;
 
-  isSidebarLoading = true; // KUNCI AKTIF
+  isSidebarLoading = true; 
 
   try {
-    // 1. Ambil data pesan private (pv_)
+    // 1. Dapatkan waktu persis 24 jam yang lalu
+    const waktu24JamLalu = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+    // 2. Ambil data pesan private dengan filter waktu 24 jam
     const { data: messages, error } = await supabase
       .from("messages")
       .select("room_id, message, created_at, sticker_url, user_id, status")
       .ilike("room_id", "pv_%")
       .ilike("room_id", `%${currentUser.id}%`)
+      .gte("created_at", waktu24JamLalu) // <-- TAMBAHKAN BARIS INI
       .order("created_at", { ascending: false });
 
     if (error) {
