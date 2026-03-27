@@ -185,13 +185,33 @@ async function kirimKomentar() {
 
 // --- 8. AUTH ---
 async function checkUser() {
-    if (!MY_USER_ID) {
-        MY_USER_ID = prompt("Masukkan UUID Profile:");
-        if (MY_USER_ID) localStorage.setItem('hype_user_id', MY_USER_ID);
+    // 1. Ambil sesi login aktif dari Supabase Auth
+    const { data: { session }, error: sessionError } = await sb.auth.getSession();
+
+    if (sessionError || !session) {
+        console.log("⚠️ User belum login di Supabase Auth.");
+        // Opsional: Kalau mau dipaksa login atau biarin aja buat visitor
+        return;
     }
-    const { data } = await sb.from('profiles').select('username').eq('id', MY_USER_ID).single();
-    if (data && data.username) myUsername = data.username;
-    console.log("👤 User ID:", MY_USER_ID, "| Username:", myUsername);
+
+    // 2. Kalau ada session, ambil User ID (UUID)-nya otomatis
+    MY_USER_ID = session.user.id;
+    localStorage.setItem('hype_user_id', MY_USER_ID);
+
+    // 3. Ambil username dari tabel profiles berdasarkan ID tadi
+    const { data: profile } = await sb
+        .from('profiles')
+        .select('username')
+        .eq('id', MY_USER_ID)
+        .single();
+
+    if (profile) {
+        myUsername = profile.username;
+    } else {
+        myUsername = session.user.email.split('@')[0]; // Cadangan: pake email depannya
+    }
+
+    console.log("✅ Login Otomatis Berhasil:", myUsername, "| ID:", MY_USER_ID);
 }
 
 // --- JALANKAN ---
