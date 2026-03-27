@@ -98,27 +98,23 @@ async function initLiveKit() {
         });
 
         // --- FIX EFEK GLOW (STRATEGI DUAL-MATCH) ---
-        room.on(LivekitClient.RoomEvent.ActiveSpeakersChanged, (speakers) => {
-            // 1. Reset semua glow
-            document.querySelectorAll('.avatar').forEach(el => el.classList.remove('speaking'));
-            
-            speakers.forEach((s) => {
-                // 2. Cari elemen berdasarkan Identity (Bisa UUID atau Username)
-                let el = document.querySelector(`[data-user-id="${s.identity}"]`);
-                
-                // 3. Fallback: Jika ID nggak ketemu, coba cari berdasarkan ID gue sendiri kalau isMe
-                if (!el && s.isLocal) {
-                    el = document.querySelector('.avatar.active'); 
-                }
+        // --- FIX EFEK GLOW (SYNC ALL USERS) ---
+room.on(LivekitClient.RoomEvent.ActiveSpeakersChanged, (speakers) => {
+    // 1. Matikan SEMUA glow dulu di panggung
+    document.querySelectorAll('.avatar').forEach(el => el.classList.remove('speaking'));
+    
+    // 2. speakers adalah daftar orang yang lagi ngomong saat ini
+    speakers.forEach((s) => {
+        // Cari elemen avatar yang punya data-user-id sesuai dengan identity si pembicara
+        const el = document.querySelector(`[data-user-id="${s.identity}"]`);
+        
+        if (el) {
+            el.classList.add('speaking');
+            // console.log("🔥 User lagi ngomong:", s.identity);
+        }
+    });
+});
 
-                if (el) {
-                    el.classList.add('speaking');
-                    console.log("✅ GLOW NYALA UNTUK:", s.identity);
-                } else {
-                    console.warn("⚠️ Speaker detected tapi elemen HTML gak ketemu. ID dari LiveKit:", s.identity);
-                }
-            });
-        });
 
         // Event: Suara orang lain masuk
         room.on(LivekitClient.RoomEvent.TrackSubscribed, (track) => {
@@ -191,9 +187,9 @@ function renderStage(slots) {
         
         if (user) {
             const userBadge = getUserBadge(user.role); 
-            // Cek apakah kita owner dan user ini bukan kita sendiri
             const canKick = IS_OWNER && !isMe;
 
+            // --- DISINI UPDATE-NYA BREE ---
             item.innerHTML = `
                 <div class="avatar ${isMe ? 'active' : ''}" 
                      data-user-id="${slot.profile_id}" 
@@ -214,7 +210,7 @@ function renderStage(slots) {
                 </span>
             `;
         } else {
-            // ... (Bagian slot kosong tetap sama)
+            // Bagian slot kosong
             item.innerHTML = `
                 <div class="avatar" onclick="naikKeStage(${i})">
                     <span class="material-icons" style="color: #444; font-size: 30px;">add</span>
