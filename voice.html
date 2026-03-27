@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+    <title>HypeVoice - Klasikan Nyanyi</title>
+    
+    <link rel="stylesheet" href="voice.css">
+  <link rel="stylesheet" href="toast.css">
+  <script src="toast.js"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/livekit-client@1.15.12/dist/livekit-client.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="voice.js" defer></script>
+</head>
+<body>
+
+<div id="sidebar-overlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<div id="sidebar" class="sidebar">
+    <div class="sidebar-header">
+        <button class="close-sidebar-btn" onclick="toggleSidebar()">
+            <span class="material-icons">chevron_right</span>
+        </button>
+        <img src="profile.png" id="sidebar-avatar" class="sidebar-profile-img">
+        <span id="sidebar-username">Username</span>
+    </div>
+
+    <div class="sidebar-menu">
+        <a href="data.html">
+            <span class="material-icons">person</span> 
+            <span>Profil</span>
+        </a>
+        <a href="#" id="menu-setting" style="display: none;" onclick="openRoomSetting()">
+            <span class="material-icons">settings</span> 
+            <span>Room Settings</span>
+        </a>
+        <a href="#" onclick="keluarRoom()" class="logout-item-link">
+            <span class="material-icons">logout</span> 
+            <span>Keluar</span>
+        </a>
+    </div>
+</div>
+
+<div id="setting-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3>️ Room Settings</h3>
+            <span class="close-modal" onclick="closeRoomSetting()">×</span>
+        </div>
+        <div class="modal-body">
+            <label>Nama Room Baru</label>
+            <input type="text" id="edit-room-name" placeholder="Contoh: Klasikan Galau...">
+            <label>Pesan Sistem (Broadcast ke Chat)</label>
+            <textarea id="system-message" placeholder="Tulis pesan pengumuman..."></textarea>
+            <button class="btn-save-setting" onclick="saveRoomSetting()">SIMPAN PERUBAHAN</button>
+        </div>
+    </div>
+</div>
+
+    <div class="app-container">
+        <header class="main-header">
+            <div class="header-left">
+                <h1 class="room-title">KLASIKAN NYANYI</h1>
+            </div>
+            <div class="header-right">
+                <button class="menu-btn" onclick="toggleSidebar()">
+                    <span class="material-icons">menu</span>
+                </button>
+            </div>
+        </header>
+
+        <section id="stage-grid" class="stage-container"></section>
+
+        <div id="chat-box" class="chat-display">
+            <div class="msg system">
+                <span class="user">SISTEM:</span> 
+Jangan gunakan kata kasar, hinaan, atau bullying dalam bentuk apa pun. Selalu jawab dengan sopan, santai, dan tetap menghargai orang lain ya!
+            </div>
+        </div>
+
+        <footer class="footer-controls">
+            <button class="btn-gift-main" onclick="toggleGiftDrawer()">
+                <span class="material-icons">redeem</span>
+            </button>
+            <div class="input-wrapper">
+                <input type="text" id="chat-input" placeholder="Ketik komentar..." autocomplete="off" onkeydown="if(event.key === 'Enter') kirimKomentar()">
+                <button class="btn-send" onclick="kirimKomentar()">KIRIM</button>
+            </div>
+        </footer>
+
+<div id="gift-drawer" class="gift-drawer">
+    <div class="handle"></div> 
+    
+    <div class="drawer-header">
+        <button class="close-drawer-btn" onclick="toggleGiftDrawer()">✕</button>
+        <span class="drawer-title">KIRIM HADIAH</span>
+        <div class="coin-panel">
+            <span class="material-icons" style="color: #f1c40f; font-size: 16px;">monetization_on</span>
+            <span id="user-coins">0</span>
+        </div>
+    </div>
+
+    <div class="target-selection-container">
+        <span class="target-label">KIRIM KE:</span>
+        <div id="gift-targets" class="target-list">
+            </div>
+    </div>
+
+    <div class="gift-list">
+        <div class="gift-item" onclick="sendGift('🌹', 'Mawar', 10)">
+            <img src="gift1.png" class="gift-img">
+            <span class="gift-label">MAWAR</span>
+            <span class="gift-price">10</span>
+        </div>
+        
+        <div class="gift-item" onclick="sendGift('💎', 'Berlian', 50)">
+            <img src="gift2.png" class="gift-img">
+            <span class="gift-label">BERLIAN</span>
+            <span class="gift-price">50</span>
+        </div>
+        
+        <div class="gift-item" onclick="sendGift('🚗', 'Mobil', 500)">
+            <img src="gift3.png" class="gift-img">
+            <span class="gift-label">MOBIL</span>
+            <span class="gift-price">500</span>
+        </div>
+        
+        <div class="gift-item" onclick="sendGift('🚀', 'Roket', 1000)">
+            <img src="gift4.png" class="gift-img">
+            <span class="gift-label">ROKET</span>
+            <span class="gift-price">1000</span>
+        </div>
+        
+        <div class="gift-item" onclick="sendGift('👑', 'Mahkota', 5000)">
+            <img src="gift5.png" class="gift-img">
+            <span class="gift-label">MAHKOTA</span>
+            <span class="gift-price">5000</span>
+        </div>
+    </div>
+</div>
+<div id="drawer-overlay" class="drawer-overlay" onclick="toggleGiftDrawer()"></div>
+
+</body>
+</html>

@@ -1,139 +1,793 @@
-/* style.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 :root {
-    --blue: #1d90f4;
-    --light-blue: #f1f8ff;
-    --border: #edf2f7;
-    --text: #2d3748;
+    --primary: #0084ff;
+    --bg-dark: #121212;
+    --card-bg: #1e1e1e;
+    --accent: #f1c40f;
+    --text-main: #ffffff;
+    --text-muted: #a0a0a0;
+    --danger: #ff4d4d;
 }
 
-body {
-    background-color: #ffffff;
-    color: var(--text);
-    font-family: Arial, sans-serif;
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body, html {
     margin: 0;
-    display: flex;
-    justify-content: center;
-    height: 100dvh;
-    overflow: hidden;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg-dark);
+    font-family: 'Inter', sans-serif;
+    color: var(--text-main);
+    overflow: hidden; /* Mencegah scroll body luar */
 }
 
+/* CONTAINER UTAMA */
 .app-container {
-    width: 100%;
-    max-width: 450px;
     display: flex;
     flex-direction: column;
-    padding: 0 20px;
+    height: 100vh;
+    width: 100%;
+    position: relative;
 }
 
-.header {
-    height: 60px;
+/* HEADER */
+.main-header {
+    padding: 15px 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid var(--border);
+    background: #181818;
+    border-bottom: 1px solid #2a2a2a;
 }
 
-.room-title { font-weight: bold; color: var(--blue); font-size: 14px; }
+.room-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--primary);
+    margin: 0;
+}
 
 .btn-exit {
-    border: 1px solid #ff4d4d;
-    color: #ff4d4d;
-    background: none;
-    padding: 5px 15px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: bold;
+    background: rgba(255, 77, 77, 0.1);
+    color: var(--danger);
+    border: none;
+    padding: 8px 15px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 13px;
     cursor: pointer;
 }
 
-/* Stage & Speaker */
-.speaker-grid {
+/* STAGE / PANGGUNG */
+.stage-container {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-    padding: 30px 0;
+    gap: 15px;
+    padding: 20px;
+    background: #181818;
+    border-radius: 0 0 25px 25px;
 }
 
-.speaker-item { display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+.speaker-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
 
+/* Update Avatar dasar */
 .avatar {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    border: 2px solid var(--border);
-    background-color: var(--light-blue);
+    width: 75px;
+    height: 75px;
+    border-radius: 28px; 
+    background: #252525;
+    position: relative;
+    /* Gunakan border 3px transparan agar layout tidak geser saat speaking muncul */
+    border: 3px solid transparent; 
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 8px;
-    overflow: hidden;
+    overflow: visible; /* Penting: agar shadow glow tidak terpotong */
 }
 
-.avatar img { width: 100%; height: 100%; object-fit: cover; }
-.plus-sign { font-size: 24px; color: var(--blue); opacity: 0.5; }
+/* FIX EFEK NGOMONG (GLOW) */
+.avatar.speaking {
+    border-color: #00ff88 !important; /* Hijau neon tegas */
+    box-shadow: 0 0 15px rgba(0, 255, 136, 0.6), 
+                0 0 30px rgba(0, 255, 136, 0.4); /* Double shadow biar mantul */
+    transform: scale(1.08); /* Efek membesar sedikit */
+    z-index: 5;
+}
 
-.name-label { font-size: 11px; font-weight: bold; color: #718096; text-transform: uppercase; }
+/* Pastikan gambar tidak menutupi border container */
+.avatar img {
+    width: calc(100% - 2px); /* Sisakan sedikit ruang untuk border */
+    height: calc(100% - 2px);
+    border-radius: 25px; /* Sesuaikan sedikit lebih kecil dari container */
+    object-fit: cover;
+    pointer-events: none;
+}
 
-/* Chat Area */
-.chat-area {
+.gift-trigger {
+    position: absolute;
+    bottom: -5px;
+    right: -5px;
+    background: var(--accent);
+    border: none;
+    border-radius: 50%;
+    width: 26px;
+    height: 26px;
+    font-size: 12px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+}
+
+.name-label {
+    margin-top: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.name-label b {
+    color: var(--primary);
+    background: rgba(0, 132, 255, 0.15);
+    padding: 1px 4px;
+    border-radius: 4px;
+}
+
+.chat-display {
     flex: 1;
     overflow-y: auto;
-    border-top: 1px solid var(--border);
-    padding: 15px 0;
-}
-
-.msg { font-size: 13px; margin-bottom: 10px; }
-.user { color: var(--blue); font-weight: bold; margin-right: 5px; }
-
-/* Footer Pill */
-.footer {
-    padding: 15px 0 25px 0;
+    padding: 15px;
     display: flex;
-    gap: 8px;
+    flex-direction: column;
+    gap: 10px;
+    
+    /* Kasih padding bawah setinggi footer (kira-kira 80px) */
+    /* Biar chat terakhir gak 'nyelip' di belakang input */
+    padding-bottom: 90px; 
 }
 
-.input-pill {
+.msg {
+    background: #222;
+    padding: 10px 14px;
+    border-radius: 15px;
+    max-width: 85%;
+    font-size: 13px;
+    align-self: flex-start;
+}
+
+.msg .user {
+    font-weight: 700;
+    color: var(--primary);
+    margin-right: 5px;
+}
+
+.footer-controls {
+    position: fixed; /* WAJIB FIXED biar gak tenggelam */
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 10px 15px;
+    background: #1e1e1e;
+    border-top: 1px solid #2a2a2a;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    
+    /* Z-Index di bawah drawer (1000), tapi di atas chat */
+    z-index: 900; 
+    
+    /* Support untuk HP notch/poni bawah (Safe Area) */
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+}
+.input-wrapper {
     flex: 1;
-    background: var(--light-blue);
-    border: 1px solid var(--border);
-    border-radius: 25px;
-    padding: 0 20px;
-    height: 45px;
-    outline: none;
+    display: flex;
+    background: #2a2a2a;
+    border-radius: 12px; /* Dikecilin dikit biar lebih clean */
+    overflow: hidden;
+    height: 45px; /* Kunci tinggi input biar gak berantakan */
 }
 
-.btn-pill {
-    height: 45px;
-    padding: 0 20px;
-    border-radius: 25px;
+#chat-input {
+    flex: 1;
+    background: transparent;
     border: none;
-    font-weight: bold;
+    padding: 0 15px;
+    color: white;
+    outline: none;
+    font-size: 15px; /* 15px atau 16px biar Chrome gak auto-zoom pas klik */
+}
+
+.btn-send {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 0 20px;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-send:active {
+    background: #0066cc; /* Efek pas dipencet */
+}
+
+.btn-mic {
+    background: #333;
+    color: white;
+    border: none;
+    padding: 12px 15px;
+    border-radius: 15px;
+    font-weight: 700;
     font-size: 12px;
+    white-space: nowrap;
+}
+/* --- Tambahkan/Ganti Bagian Ini di voice.css --- */
+
+/* Tombol Mic di Header */
+.btn-mic-header {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 11px;
+    margin-right: 8px;
+}
+
+/* Tombol Gift Utama di Footer */
+.btn-gift-main {
+    background: #2a2a2a;
+    border: 1px solid #333;
+    font-size: 20px;
+    width: 45px;
+    height: 45px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* --- SLIDE UP DRAWER GIFT (FIXED & RESPONSIVE) --- */
+.gift-drawer {
+    position: fixed;
+    bottom: -100%; /* Sembunyi di bawah */
+    left: 0;
+    right: 0;
+    background: #1e1e1e;
+    border-top-left-radius: 30px; /* Lebih bulat biar modern */
+    border-top-right-radius: 30px;
+    
+    /* PENTING: Z-index harus lebih tinggi dari footer (min 5000) */
+    z-index: 5001; 
+    
+    /* Kunci biar gak kepotong di Chrome Mobile */
+    padding: 20px;
+    padding-top: 30px; /* Ruang buat handle */
+    /* Tambahin padding bawah buat area navigasi gesture Android/iPhone */
+    padding-bottom: calc(30px + env(safe-area-inset-bottom)); 
+    
+    transition: bottom 0.4s cubic-bezier(0.36, 1.1, 0.2, 1);
+    box-shadow: 0 -15px 50px rgba(0,0,0,0.6);
+    
+    /* Biar bisa di-scroll kalau gift lo banyak ke bawah */
+    max-height: 70vh; 
+    overflow-y: auto;
+}
+
+.gift-drawer.open {
+    bottom: 0 !important; /* Paksa muncul di paling bawah */
+}
+
+/* Header di dalam drawer */
+.drawer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 0 5px;
+}
+
+.drawer-header span {
+    color: var(--text-main);
+    font-weight: 700;
+    font-size: 15px;
+}
+
+/* Handle garis kecil di atas drawer */
+.handle {
+    width: 50px;
+    height: 5px;
+    background: #333;
+    border-radius: 10px;
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+/* Container Grid Gift */
+.gift-list {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 3 Kolom */
+    gap: 12px;
+}
+
+.gift-item {
+    background: #252525;
+    padding: 15px 5px;
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+}
+
+/* Efek pas diklik */
+.gift-item:active {
+    transform: scale(0.9);
+    background: #333;
+    border-color: var(--primary);
+}
+
+.gift-img {
+    font-size: 32px; /* Kalau pake emoji */
+    width: 50px;     /* Kalau pake gambar */
+    height: 50px;
+    object-fit: contain;
+    margin-bottom: 8px;
+}
+
+.gift-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+/* --- OVERLAY GELAP (WAJIB ADA) --- */
+.drawer-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 5000; /* Di bawah drawer tapi di atas segalanya */
+    display: none;
+    backdrop-filter: blur(4px); /* Efek blur estetik */
+}
+
+.drawer-overlay.show {
+    display: block;
+}
+
+/* Tombol Hamburger */
+.menu-btn {
+    background: none;
+    border: none;
+    color: var(--text-main);
+    cursor: pointer;
+    margin-right: 15px;
+    display: flex;
+    align-items: center;
+}
+
+/* --- 1. OVERLAY (Layar Gelap) --- */
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 1999; 
+    display: none; /* Default sembunyi */
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+/* Muncul pas Class .active ditambahin via JS */
+.sidebar-overlay.active {
+    display: block;
+    opacity: 1;
+}
+
+/* --- 2. SIDEBAR CONTAINER --- */
+.sidebar {
+    position: fixed;
+    top: 0;
+    right: -280px; /* Sembunyi di kanan layar */
+    width: 280px;
+    height: 100%;
+    background: #181818;
+    z-index: 2000;
+    transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 25px 20px;
+    box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+    display: flex;
+    flex-direction: column; /* Biar Logout bisa ditaruh di bawah */
+}
+
+.sidebar.active {
+    right: 0; /* Geser masuk ke layar */
+}
+
+/* --- 3. HEADER SIDEBAR (Foto & Nama) --- */
+.sidebar-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* UKURAN FOTO PROFIL FIX (Gak bakal kegedean lagi) */
+.sidebar-profile-img {
+    width: 70px; /* Ukuran pas buat mobile */
+    height: 70px;
+    border-radius: 50%;
+    border: 2px solid var(--primary);
+    object-fit: cover;
+    margin-bottom: 12px;
+}
+
+#sidebar-username {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-main);
+    letter-spacing: 0.5px;
+}
+
+/* Tombol Tutup (Panah) */
+.close-sidebar-btn {
+    position: absolute;
+    left: 0;
+    top: 0;
+    background: none;
+    border: none;
+    color: #555;
     cursor: pointer;
 }
 
-.btn-blue { background: var(--blue); color: white; }
-.btn-outline { background: white; border: 1px solid var(--blue); color: var(--blue); }
-/* Animasi Pendar Biru */
-@keyframes pulse-blue {
-    0% { box-shadow: 0 0 0 0 rgba(29, 144, 244, 0.7); }
-    70% { box-shadow: 0 0 0 15px rgba(29, 144, 244, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(29, 144, 244, 0); }
+/* --- 4. MENU LINKS --- */
+.sidebar-menu {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1; /* Biar area menu ngambil sisa ruang */
 }
 
-/* Class untuk avatar yang lagi aktif/ngomong */
-/* Update CSS lo jadi gini */
-.avatar.active {
-    border: 3px solid #00dbff; /* Warna biru kalau di panggung */
+.sidebar-menu a {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    color: #fff;
+    text-decoration: none;
+    padding: 12px 15px;
+    border-radius: 12px;
+    margin-bottom: 5px;
+    font-size: 14px;
+    transition: background 0.2s;
 }
 
-.avatar.speaking {
-    box-shadow: 0 0 20px #00dbff, 0 0 40px #00dbff; /* Glow cuma pas ngomong */
-    transform: scale(1.1); /* Agak membesar pas ngomong */
-    animation: pulse-glow 0.5s infinite alternate;
+.sidebar-menu a:hover {
+    background: rgba(0, 132, 255, 0.1);
+    color: var(--primary);
 }
 
-@keyframes pulse-glow {
-    from { box-shadow: 0 0 10px #00dbff; }
-    to { box-shadow: 0 0 30px #00dbff; }
+.sidebar-menu a .material-icons {
+    font-size: 20px;
+}
+
+/* --- 5. LOGOUT ITEM (Paling Bawah) --- */
+.logout-item {
+    color: #ff4d4d !important;
+    margin-top: auto; /* Dorong otomatis ke paling bawah */
+    margin-bottom: 10px;
+    background: rgba(255, 77, 77, 0.08) !important;
+    font-weight: 700;
+}
+
+/* Update Ikon Gift */
+.btn-gift-main {
+    background: linear-gradient(135deg, #0084ff, #00c6ff); /* Gradasi biar keren */
+    color: white;
+    border: none;
+    box-shadow: 0 4px 15px rgba(0, 132, 255, 0.3);
+}
+/* Panel Saldo Koin di Drawer */
+.coin-panel {
+    background: rgba(241, 196, 15, 0.15);
+    padding: 4px 12px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    border: 1px solid rgba(241, 196, 15, 0.3);
+}
+
+#user-coins {
+    color: #f1c40f;
+    font-weight: 800;
+    font-size: 14px;
+}
+
+/* Label Harga di bawah Nama Gift */
+.gift-price {
+    font-size: 10px;
+    color: #f1c40f;
+    font-weight: 700;
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.gift-price::before {
+    content: "🪙";
+    font-size: 8px;
+}
+
+/* Header Drawer */
+.drawer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 20px;
+}
+/* --- TARGET SELECTION STYLES --- */
+.target-selection-container {
+    margin-bottom: 20px;
+    padding: 0 5px;
+}
+
+.target-label {
+    font-size: 10px;
+    color: #888;
+    font-weight: 800;
+    margin-bottom: 10px;
+    display: block;
+    letter-spacing: 1px;
+}
+
+.target-list {
+    display: flex;
+    gap: 15px;
+    overflow-x: auto;
+    padding: 5px 5px 10px 5px;
+    scrollbar-width: none;
+}
+.target-list::-webkit-scrollbar { display: none; }
+
+.target-user {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-width: 65px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    filter: grayscale(100%) opacity(0.5); /* Redup kalau gak dipilih */
+}
+
+.target-user.selected {
+    filter: grayscale(0%) opacity(1);
+    transform: scale(1.1);
+}
+
+.target-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 18px;
+    border: 2px solid transparent;
+    object-fit: cover;
+}
+
+.target-user.selected .target-avatar {
+    border-color: var(--primary);
+    box-shadow: 0 0 12px rgba(0, 132, 255, 0.6);
+}
+
+.target-name {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-muted);
+    max-width: 65px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.target-user.selected .target-name { color: var(--primary); }
+
+/* --- HARGA KOIN --- */
+.gift-price {
+    font-size: 11px;
+    color: #f1c40f;
+    font-weight: 800;
+    margin-top: 5px;
+}
+.gift-price::before { content: "🪙 "; }
+  
+/* TOMBOL TUTUP DRAWER */
+.close-drawer-btn {
+    background: rgba(255, 255, 255, 0.08); /* Background gelap transparan */
+    border: none;
+    color: #a0a0a0; /* Warna abu-abu soft */
+    width: 35px;
+    height: 35px;
+    border-radius: 50%; /* Bulat sempurna */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Efek pas ditekan (Touch Feedback) */
+.close-drawer-btn:active {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(0.9); /* Nge-press ke dalem dikit */
+    color: #ffffff;
+}
+
+/* Biar posisinya pas di dalam header */
+.drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 20px;
+    padding-top: 5px;
+}
+/* Container avatar buat posisiin tombol kick */
+.avatar { position: relative; }
+
+/* Tombol Kick (Lingkaran Merah) */
+.kick-btn {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background: #ff4757;
+    color: white;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    cursor: pointer;
+    border: 2px solid #1a1a1a;
+    z-index: 10;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+}
+
+.kick-btn:hover { background: #ff6b81; }
+
+.logout-btn {
+    background: #ff4d4d; /* Merah */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 20px;
+}
+.logout-btn:hover { background: #ff3333; }
+
+.kick-btn-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5); /* Gelapkan avatar dikit pas diklik */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    z-index: 10;
+    cursor: pointer;
+}
+
+.kick-btn {
+    background: #ff4757;
+    color: white;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
+.kick-btn .material-icons {
+    font-size: 20px;
+}
+/* Modal Setting */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85);
+    display: none; /* Sembunyi default */
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+.modal-box {
+    background: #1a1a1a;
+    width: 85%;
+    max-width: 400px;
+    border-radius: 15px;
+    padding: 20px;
+    border: 1px solid #333;
+}
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.close-modal { font-size: 24px; cursor: pointer; color: #888; }
+.modal-body label { display: block; margin-bottom: 5px; font-size: 14px; color: #0084ff; }
+.modal-body input, .modal-body textarea {
+    width: 100%; background: #262626; border: 1px solid #333;
+    color: white; padding: 12px; border-radius: 8px; margin-bottom: 15px;
+}
+.btn-save-setting {
+    width: 100%; padding: 12px; background: #0084ff; color: white;
+    border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
+}
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 10000;
+    display: none; /* INI WAJIB ADA BIAR GAK HITAM PAS START */
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-box {
+    background: #1a1a1a;
+    width: 85%;
+    max-width: 400px;
+    border-radius: 15px;
+    padding: 20px;
+    border: 1px solid #333;
+}
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.close-modal { font-size: 24px; cursor: pointer; color: #888; }
+.modal-body label { display: block; margin-bottom: 5px; font-size: 14px; color: #0084ff; }
+.modal-body input, .modal-body textarea {
+    width: 100%; background: #262626; border: 1px solid #333;
+    color: white; padding: 12px; border-radius: 8px; margin-bottom: 15px;
+}
+.btn-save-setting {
+    width: 100%; padding: 12px; background: #0084ff; color: white;
+    border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
 }
