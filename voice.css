@@ -1,0 +1,139 @@
+/* style.css */
+:root {
+    --blue: #1d90f4;
+    --light-blue: #f1f8ff;
+    --border: #edf2f7;
+    --text: #2d3748;
+}
+
+body {
+    background-color: #ffffff;
+    color: var(--text);
+    font-family: Arial, sans-serif;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    height: 100dvh;
+    overflow: hidden;
+}
+
+.app-container {
+    width: 100%;
+    max-width: 450px;
+    display: flex;
+    flex-direction: column;
+    padding: 0 20px;
+}
+
+.header {
+    height: 60px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+}
+
+.room-title { font-weight: bold; color: var(--blue); font-size: 14px; }
+
+.btn-exit {
+    border: 1px solid #ff4d4d;
+    color: #ff4d4d;
+    background: none;
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+/* Stage & Speaker */
+.speaker-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    padding: 30px 0;
+}
+
+.speaker-item { display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+
+.avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background-color: var(--light-blue);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+    overflow: hidden;
+}
+
+.avatar img { width: 100%; height: 100%; object-fit: cover; }
+.plus-sign { font-size: 24px; color: var(--blue); opacity: 0.5; }
+
+.name-label { font-size: 11px; font-weight: bold; color: #718096; text-transform: uppercase; }
+
+/* Chat Area */
+.chat-area {
+    flex: 1;
+    overflow-y: auto;
+    border-top: 1px solid var(--border);
+    padding: 15px 0;
+}
+
+.msg { font-size: 13px; margin-bottom: 10px; }
+.user { color: var(--blue); font-weight: bold; margin-right: 5px; }
+
+/* Footer Pill */
+.footer {
+    padding: 15px 0 25px 0;
+    display: flex;
+    gap: 8px;
+}
+
+.input-pill {
+    flex: 1;
+    background: var(--light-blue);
+    border: 1px solid var(--border);
+    border-radius: 25px;
+    padding: 0 20px;
+    height: 45px;
+    outline: none;
+}
+
+.btn-pill {
+    height: 45px;
+    padding: 0 20px;
+    border-radius: 25px;
+    border: none;
+    font-weight: bold;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.btn-blue { background: var(--blue); color: white; }
+.btn-outline { background: white; border: 1px solid var(--blue); color: var(--blue); }
+/* Animasi Pendar Biru */
+@keyframes pulse-blue {
+    0% { box-shadow: 0 0 0 0 rgba(29, 144, 244, 0.7); }
+    70% { box-shadow: 0 0 0 15px rgba(29, 144, 244, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(29, 144, 244, 0); }
+}
+
+/* Class untuk avatar yang lagi aktif/ngomong */
+/* Update CSS lo jadi gini */
+.avatar.active {
+    border: 3px solid #00dbff; /* Warna biru kalau di panggung */
+}
+
+.avatar.speaking {
+    box-shadow: 0 0 20px #00dbff, 0 0 40px #00dbff; /* Glow cuma pas ngomong */
+    transform: scale(1.1); /* Agak membesar pas ngomong */
+    animation: pulse-glow 0.5s infinite alternate;
+}
+
+@keyframes pulse-glow {
+    from { box-shadow: 0 0 10px #00dbff; }
+    to { box-shadow: 0 0 30px #00dbff; }
+}

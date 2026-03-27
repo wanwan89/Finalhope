@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HypeVoice - LiveKit Version</title>
+    
+    <link rel="stylesheet" href="voice.css">
+
+   <script src="https://cdn.jsdelivr.net/npm/livekit-client@1.15.12/dist/livekit-client.umd.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script src="voice.js" defer></script>
+</head>
+<body>
+    <div class="app-container">
+        <header class="header">
+            <span class="room-title">KLASIKAN NYANYI</span>
+            <button class="btn-exit" onclick="keluarRoom()">KELUAR</button>
+        </header>
+
+        <section class="stage-section">
+            <div class="speaker-grid" id="stage-grid">
+                </div>
+        </section>
+
+        <div class="chat-area" id="chat-box">
+            <div class="msg"><span class="user">SISTEM:</span> Selamat datang di room Klasikan.</div>
+        </div>
+
+        <footer class="footer">
+            <input type="text" class="input-pill" id="chat-input" placeholder="Ketik komentar..." onkeydown="if(event.key === 'Enter') kirimKomentar()">
+            
+            <button class="btn-pill btn-blue" onclick="kirimKomentar()">KIRIM</button>
+            
+            <button class="btn-pill btn-outline" onclick="mintaNaik()">NAIK MIC</button>
+        </footer>
+    </div>
+</body>
+</html>
