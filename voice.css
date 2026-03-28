@@ -86,29 +86,41 @@ body, html {
     border-radius: 28px; 
     background: #252525;
     position: relative;
-    /* Gunakan border 3px transparan agar layout tidak geser saat speaking muncul */
+    /* Gunakan border 3px transparan agar layout tidak geser */
     border: 3px solid transparent; 
     transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: visible; /* Penting: agar shadow glow tidak terpotong */
+    overflow: visible; 
 }
 
-/* FIX EFEK NGOMONG (GLOW) */
+/* FIX EFEK NGOMONG (GLOW) - VERSI TURBO */
 .avatar.speaking {
     border-color: #00ff88 !important; /* Hijau neon tegas */
-    box-shadow: 0 0 15px rgba(0, 255, 136, 0.6), 
-                0 0 30px rgba(0, 255, 136, 0.4); /* Double shadow biar mantul */
+    box-shadow: 0 0 15px rgba(0, 255, 136, 0.8), 
+                0 0 30px rgba(0, 255, 136, 0.5); 
     transform: scale(1.08); /* Efek membesar sedikit */
     z-index: 5;
+    animation: glow-pulse 1.5s infinite; /* Tambahin biar idup */
 }
 
-/* Pastikan gambar tidak menutupi border container */
+/* Animasi denyut ijo */
+@keyframes glow-pulse {
+    0% { box-shadow: 0 0 10px rgba(0, 255, 136, 0.6); }
+    50% { box-shadow: 0 0 25px rgba(0, 255, 136, 0.9); }
+    100% { box-shadow: 0 0 10px rgba(0, 255, 136, 0.6); }
+}
+
+/* Pastikan gambar ikut cerah pas ngomong */
+.avatar.speaking img {
+    filter: brightness(1.2);
+}
+
 .avatar img {
-    width: calc(100% - 2px); /* Sisakan sedikit ruang untuk border */
+    width: calc(100% - 2px);
     height: calc(100% - 2px);
-    border-radius: 25px; /* Sesuaikan sedikit lebih kecil dari container */
+    border-radius: 25px;
     object-fit: cover;
     pointer-events: none;
 }

@@ -99,22 +99,27 @@ async function initLiveKit() {
 
         // --- FIX EFEK GLOW (STRATEGI DUAL-MATCH) ---
         // --- FIX EFEK GLOW (SYNC ALL USERS) ---
-room.on(LivekitClient.RoomEvent.ActiveSpeakersChanged, (speakers) => {
-    // 1. Matikan SEMUA glow dulu di panggung
-    document.querySelectorAll('.avatar').forEach(el => el.classList.remove('speaking'));
-    
-    // 2. speakers adalah daftar orang yang lagi ngomong saat ini
-    speakers.forEach((s) => {
-        // Cari elemen avatar yang punya data-user-id sesuai dengan identity si pembicara
-        const el = document.querySelector(`[data-user-id="${s.identity}"]`);
-        
-        if (el) {
-            el.classList.add('speaking');
-            // console.log("🔥 User lagi ngomong:", s.identity);
-        }
-    });
-});
+        // --- FIX EFEK GLOW (ANTI-ILANG) ---
+        room.on(LivekitClient.RoomEvent.ActiveSpeakersChanged, (speakers) => {
+            // 1. Matikan semua glow dulu
+            document.querySelectorAll('.avatar').forEach(el => el.classList.remove('speaking'));
+            
+            // 2. Jalankan glow hanya untuk yang lagi ngomong
+            speakers.forEach((s) => {
+                // Cari elemen berdasarkan identity (UUID)
+                let el = document.querySelector(`[data-user-id="${s.identity}"]`);
+                
+                // Fallback: Jika ID identity mismatch tapi itu kita sendiri
+                if (!el && s.isLocal) {
+                    el = document.querySelector(`[data-user-id="${MY_USER_ID}"]`);
+                }
 
+                if (el) {
+                    el.classList.add('speaking');
+                    console.log("🔥 Glow ON:", s.identity);
+                }
+            });
+        });
 
         // Event: Suara orang lain masuk
         room.on(LivekitClient.RoomEvent.TrackSubscribed, (track) => {
@@ -189,7 +194,7 @@ function renderStage(slots) {
             const userBadge = getUserBadge(user.role); 
             const canKick = IS_OWNER && !isMe;
 
-            // --- DISINI UPDATE-NYA BREE ---
+            // Pastikan data-user-id ini terpasang dengan benar untuk efek GLOW
             item.innerHTML = `
                 <div class="avatar ${isMe ? 'active' : ''}" 
                      data-user-id="${slot.profile_id}" 
@@ -210,7 +215,7 @@ function renderStage(slots) {
                 </span>
             `;
         } else {
-            // Bagian slot kosong
+            // Slot Kosong
             item.innerHTML = `
                 <div class="avatar" onclick="naikKeStage(${i})">
                     <span class="material-icons" style="color: #444; font-size: 30px;">add</span>
