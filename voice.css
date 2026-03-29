@@ -803,3 +803,21 @@ body, html {
     width: 100%; padding: 12px; background: #0084ff; color: white;
     border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
 }
+/* Menghilangkan kotak biru/abu-abu saat elemen diklik di mobile */
+* {
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+}
+
+/* Khusus untuk tombol atau menu agar tidak ada outline saat difokuskan */
+.menu-item-tiktok, .btn, .tab, button {
+    -webkit-tap-highlight-color: rgba(0,0,0,0);
+    user-select: none; /* Biar teksnya nggak gak sengaja kepilih/keblok */
+}
+[23/3 12.26] CO: Gemini Pro (Flow) Gratis 3 Bulan
+
+Cara terbaru mendapatkan gemini pro / flow gratis selama 3 bulan saya buatkan tutorial ebook dan video lengkap.
+
+Cara ini lebih mudah di banding gemini pro student. dan enaknya ini bisa ternak akun karena tidak di batasi bisa di ulang terus dengan pembayaran yang sama. 
+
+Panduan ini sudah saya tambahkan di member area Panduan Generate AI. yang blm join cek lynk.id/aplivideo pilih paling atas.
