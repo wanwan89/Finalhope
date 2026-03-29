@@ -55,10 +55,17 @@ let MY_USER_ID = localStorage.getItem('hype_user_id');
 let myUsername = "User_" + Math.floor(Math.random() * 1000); // Nama cadangan
 
 // --- 3. JALANKAN APLIKASI ---
+// --- 3. JALANKAN APLIKASI ---
 async function initApp() {
     console.log("🚀 Memulai HypeVoice (Ultimate Repair)...");
-    await checkUser(); 
-    await fetchStage(); 
+    
+    // Cek izin masuk dulu
+    const canEnter = await checkUser(); 
+    
+    // Kalau ditolak (canEnter = false), stop semua proses biar nggak bocor ke LiveKit
+    if (!canEnter) return; 
+
+    // Kalau diizinkan, baru jalanin yang lain
     initLiveKit(); 
     listenRealtime(); 
 }
@@ -143,7 +150,8 @@ async function fetchStage() {
             profiles (
                 username, 
                 avatar_url, 
-                role
+                role,
+                mic_off
             )
         `)
         .eq('room_id', CURRENT_ROOM_ID)
@@ -164,6 +172,7 @@ async function fetchStage() {
     renderStage(slots);
 }
 
+// --- JALANKAN LOGIKA RENDER (PENTING BUAT TANDA MIC) ---
 function renderStage(slots) {
     const grid = document.getElementById('stage-grid');
     if (!grid) return;
@@ -178,8 +187,10 @@ function renderStage(slots) {
         if (user) {
             const userBadge = getUserBadge(user.role); 
             const canKick = IS_OWNER && !isMe;
+            
+            // 🔥 Cek apakah dia lagi mute atau nggak
+            const isMuted = user.mic_off === true; 
 
-            // FIX: Tambahin data-username biar LiveKit glow bisa deteksi dengan gampang
             item.innerHTML = `
                 <div class="avatar ${isMe ? 'active' : ''}" 
                      data-user-id="${slot.profile_id}" 
@@ -187,7 +198,10 @@ function renderStage(slots) {
                      onclick="toggleKickBtn(this, ${canKick})">
                     
                     <img src="${user.avatar_url || 'profile.png'}">
-                    
+<div class="mute-badge" style="display: ${isMuted ? 'flex' : 'none'}; position: absolute; bottom: 0; right: 0; background: rgba(0,0,0,0.7); border-radius: 50%; width: 22px; height: 22px; align-items: center; justify-content: center; border: 2px solid white; z-index: 10;">
+    <span class="material-icons" style="color: #e74c3c; font-size: 14px;">mic_off</span>
+</div>
+
                     ${canKick ? `
                         <div class="kick-btn-wrapper" style="display:none;">
                             <div class="kick-btn" onclick="event.stopPropagation(); kickUser('${slot.profile_id}', '${user.username}')">
@@ -200,6 +214,7 @@ function renderStage(slots) {
                     ${user.username} ${userBadge}
                 </span>
             `;
+
         } else {
             item.innerHTML = `
                 <div class="avatar" onclick="naikKeStage(${i})">
@@ -217,6 +232,17 @@ async function naikKeStage(index) {
     if (!MY_USER_ID) return toast("Login dulu Bree!");
 
     try {
+        // --- TAMBAHAN FIX 1: Cek slotnya kosong atau nggak ---
+        const { data: checkSlot } = await sb.from('room_slots')
+            .select('profile_id')
+            .match({ room_id: CURRENT_ROOM_ID, slot_index: index })
+            .single();
+
+        if (checkSlot && checkSlot.profile_id !== null) {
+            return toast("Kursi udah ada yang nempatin bro, cari yang kosong aja!");
+        }
+        // -----------------------------------------------------
+
         const { error: clearErr } = await sb.from('room_slots')
             .update({ profile_id: null })
             .eq('profile_id', MY_USER_ID);
@@ -332,23 +358,38 @@ async function checkUser() {
             if (coinLabel) coinLabel.innerText = (profileRes.data.coins || 0).toLocaleString();
         }
 
-        if (roomRes.data && roomRes.data.owner_id === MY_USER_ID) {
-            IS_OWNER = true;
-            console.log("👑 KONFIRMASI: LO ADALAH OWNER!");
+        // --- LOGIKA GEMBOK ROOM ---
+        if (roomRes.data) {
+            if (roomRes.data.owner_id === MY_USER_ID) {
+                IS_OWNER = true;
+                console.log("👑 KONFIRMASI: LO ADALAH OWNER!");
 
-            const setBtn = document.getElementById('menu-setting');
-            if (setBtn) setBtn.style.display = 'flex'; 
+                const setBtn = document.getElementById('menu-setting');
+                if (setBtn) setBtn.style.display = 'flex'; 
 
-            await sb.from('rooms').update({ is_active: true }).eq('id', CURRENT_ROOM_ID);
-        } else {
-            IS_OWNER = false;
-            const setBtn = document.getElementById('menu-setting');
-            if (setBtn) setBtn.style.display = 'none';
+                // Owner masuk -> Buka gembok room
+                await sb.from('rooms').update({ is_active: true }).eq('id', CURRENT_ROOM_ID);
+            } else {
+                IS_OWNER = false;
+                const setBtn = document.getElementById('menu-setting');
+                if (setBtn) setBtn.style.display = 'none';
+
+                // User biasa masuk -> Cek gembok room
+                if (roomRes.data.is_active === false) {
+                    alert("Room ini belum dibuka oleh Owner! Silakan kembali ke Lobby.");
+                    window.location.href = 'lobby.html'; // Lempar balik ke lobby
+                    return false; // Tolak akses
+                }
+            }
         }
         
         fetchStage(); 
+        return true; // Izinkan akses
     } else {
         console.warn("⚠️ User tidak login.");
+        alert("Harap login terlebih dahulu.");
+        window.location.href = 'home.html'; // Lempar ke halaman login
+        return false;
     }
 }
 
@@ -421,10 +462,14 @@ function listenRealtime() {
         chatBox.scrollTop = chatBox.scrollHeight;
         
         // Cek jika ini adalah pesan gift untuk memunculkan efek lokal
-        if (p.new.username === "SISTEM_GIFT" && typeof confetti !== 'undefined') {
-            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+        if (p.new.username === "SISTEM_GIFT") {
+            if (typeof confetti !== 'undefined') {
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            }
+            // FIX 3: Masukin p.new.role (nomor gift) ke pemanggil animasi
+            playGiftAnimation(p.new.role);
         }
-    });
+});
 
     roomChannel.subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
@@ -463,8 +508,10 @@ async function updateGiftTargets() {
     const targetContainer = document.getElementById('gift-targets');
     if (!targetContainer) return;
 
+    // --- FIX 2: Tambahin filter room_id biar nggak ngambil orang dari room lain ---
     const { data: slots, error } = await sb.from('room_slots')
         .select(`profile_id, profiles (username, avatar_url)`)
+        .eq('room_id', CURRENT_ROOM_ID) // <- INI KUNCI UTAMANYA BRO
         .not('profile_id', 'is', null);
 
     targetContainer.innerHTML = "";
@@ -510,27 +557,37 @@ function toggleGiftDrawer() {
     }
 }
 
-async function sendGift(icon, giftName, harga) {
+// FIX 1: Tambahin parameter "giftId" di ujung
+// Kata "icon" di dalam kurung gue hapus
+async function sendGift(giftName, harga, giftId) {
     if (!selectedTargetId) return toast("Pilih target saweran dulu!");
 
     const coinDisplay = document.getElementById('user-coins');
-    let saldoSkrg = parseInt(coinDisplay.innerText.replace(/,/g, ''));
+    let saldoSkrg = parseInt(coinDisplay.innerText.replace(/[,.]/g, ''));
+    let hargaKado = parseInt(harga); 
 
-    if (saldoSkrg < harga) return toast("Koin tidak cukup!");
+    if (isNaN(saldoSkrg)) {
+        console.error("Gagal membaca saldo koin di layar:", coinDisplay.innerText);
+        return toast("Terjadi kesalahan saat membaca koin!");
+    }
+
+    if (saldoSkrg < hargaKado) return toast("Koin tidak cukup!");
 
     try {
         const { error: updateError } = await sb.from('profiles')
-            .update({ coins: saldoSkrg - harga })
+            .update({ coins: saldoSkrg - hargaKado })
             .eq('id', MY_USER_ID);
 
         if (updateError) throw updateError;
 
-        coinDisplay.innerText = (saldoSkrg - harga).toLocaleString();
+        coinDisplay.innerText = (saldoSkrg - hargaKado).toLocaleString();
 
+        // Teks chat udah disesuaikan biar gak manggil icon lagi
         await sb.from('room_messages').insert([{ 
             room_id: CURRENT_ROOM_ID,
             username: "SISTEM_GIFT", 
-            text: `✨ ${myUsername} mengirim ${icon} ${giftName.toUpperCase()} ke ${selectedTargetName}!` 
+            text: `${myUsername} mengirim ${giftName.toUpperCase()} ke ${selectedTargetName}!`,
+            role: giftId.toString()
         }]);
 
         toggleGiftDrawer();
@@ -593,6 +650,116 @@ async function saveRoomSetting() {
 
     } catch (e) {
         toast("Gagal simpan: " + e.message);
+    }
+}
+// --- LOGIKA ANIMASI GIF CUSTOM ---
+// --- LOGIKA ANIMASI GIF CUSTOM (SUDAH DI-FIX BIAR SESUAI) ---
+function playGiftAnimation(giftId) {
+    // Tangkap ID gift-nya. Kalau misalnya kosong/error, kita set default ke 1 biar aman.
+    const id = giftId || 1; 
+    const gifName = `giftvid${id}.gif`; // Sekarang namanya bakal sesuai ID!
+
+    // Cek apakah wadah animasinya udah ada, kalo belum kita bikin otomatis
+    let overlay = document.getElementById('gift-anim-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'gift-anim-overlay';
+        // Styling CSS langsung dari JS biar praktis
+        overlay.style.cssText = `
+            position: fixed; 
+            top: 0; left: 0; 
+            width: 100vw; height: 100vh; 
+            pointer-events: none; /* Biar gak nutupin klik user */
+            z-index: 9999; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            background: rgba(0,0,0,0.4); /* Efek gelap dikit di background */
+            opacity: 0; 
+            transition: opacity 0.3s ease; 
+            display: none;
+        `;
+        
+        const img = document.createElement('img');
+        img.id = 'gift-anim-img';
+        img.style.cssText = "width: 300px; max-width: 80%; object-fit: contain;";
+        
+        overlay.appendChild(img);
+        document.body.appendChild(overlay);
+    }
+
+    const img = document.getElementById('gift-anim-img');
+    
+    // Trik ?t=... dipakai biar GIF selalu ngulang dari frame pertama setiap kali dipanggil
+    img.src = `${gifName}?t=${new Date().getTime()}`; 
+    
+    // Tampilkan overlay
+    overlay.style.display = 'flex';
+    
+    // Fade in
+    setTimeout(() => overlay.style.opacity = '1', 50);
+
+    // Hilangkan animasi setelah 3 detik (Bisa lu ganti 3000 ini sesuai durasi GIF lu)
+    setTimeout(() => {
+        overlay.style.opacity = '0';
+        setTimeout(() => overlay.style.display = 'none', 300);
+    }, 3000); 
+}
+// --- LOGIKA MUTE / UNMUTE MIC (SUDAH // --- LOGIKA MUTE / UNMUTE MIC DI SIDEBAR ---
+async function toggleMicSidebar() {
+    // Pastikan user udah di panggung
+    if (!room || !room.localParticipant) {
+        return toast("Lu belum naik panggung bro!");
+    }
+
+    try {
+        const isMicOn = room.localParticipant.isMicrophoneEnabled;
+        const newStatus = !isMicOn; // Kalau sebelumnya nyala, sekarang jadi mati (dan sebaliknya)
+
+        // 1. Matikan/Hidupkan suara di sistem LiveKit
+        await room.localParticipant.setMicrophoneEnabled(newStatus);
+        
+        // 2. Update tombol di Sidebar
+        const micIcon = document.getElementById('mic-icon');
+        const micText = document.getElementById('mic-text');
+        
+        if (newStatus === true) { // Jika MIC NYALA
+            micIcon.innerText = "mic";
+            micIcon.style.color = "#2ecc71"; // Hijau
+            micText.innerText = "Matikan Mic";
+            toast("🎤 Mic Dihidupkan");
+        } else { // Jika MIC MATI
+            micIcon.innerText = "mic_off";
+            micIcon.style.color = "#e74c3c"; // Merah
+            micText.innerText = "Hidupkan Mic";
+            toast("🔇 Mic Dimatikan");
+            
+            // Hilangkan efek glow kalau lagi ngomong
+            const myAvatar = document.querySelector(`[data-user-id="${MY_USER_ID}"]`);
+            if (myAvatar) myAvatar.classList.remove('speaking');
+        }
+
+        // 🔥 3. INI KUNCINYA: Bikin ikon MUTE langsung muncul di avatar panggung lu!
+        const stageAvatar = document.querySelector(`[data-user-id="${MY_USER_ID}"]`);
+        if (stageAvatar) {
+            const muteBadge = stageAvatar.querySelector('.mute-badge');
+            if (muteBadge) {
+                // Kalau mic mati (!newStatus), tampilkan (flex). Kalau mic nyala, sembunyikan (none).
+                muteBadge.style.display = newStatus ? 'none' : 'flex';
+            }
+        }
+
+        // 4. Update data ke Supabase biar HP user lain juga ikutan nampilin ikonnya
+        const isMute = !newStatus; 
+        const { error: sbError } = await sb.from('profiles')
+            .update({ mic_off: isMute }) 
+            .eq('id', MY_USER_ID);
+
+        if (sbError) throw sbError; 
+
+    } catch (err) {
+        console.error("❌ Gagal sync mic:", err.message);
+        toast("Gagal mengubah status Mic!");
     }
 }
 

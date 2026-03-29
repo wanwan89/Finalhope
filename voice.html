@@ -2,13 +2,13 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 
     <title>HypeVoice - Klasikan Nyanyi</title>
     
     <link rel="stylesheet" href="voice.css">
-  <link rel="stylesheet" href="toast.css">
-  <script src="toast.js"></script>
+    <link rel="stylesheet" href="toast.css">
+    <script src="toast.js"></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
 
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -34,6 +34,12 @@
             <span class="material-icons">person</span> 
             <span>Profil</span>
         </a>
+        
+        <a href="#" id="menu-mic" onclick="toggleMicSidebar()">
+            <span class="material-icons" id="mic-icon" style="color: #2ecc71;">mic</span> 
+            <span id="mic-text">Matikan Mic</span>
+        </a>
+        
         <a href="#" id="menu-setting" style="display: none;" onclick="openRoomSetting()">
             <span class="material-icons">settings</span> 
             <span>Room Settings</span>
@@ -43,9 +49,7 @@
             <span>Keluar</span>
         </a>
     </div>
-</div>
-
-<div id="setting-modal" class="modal-overlay" style="display: none;">
+</div> <div id="setting-modal" class="modal-overlay" style="display: none;">
     <div class="modal-box">
         <div class="modal-header">
             <h3>️ Room Settings</h3>
@@ -61,36 +65,39 @@
     </div>
 </div>
 
-    <div class="app-container">
-        <header class="main-header">
-            <div class="header-left">
-                <h1 class="room-title">KLASIKAN NYANYI</h1>
-            </div>
-            <div class="header-right">
-                <button class="menu-btn" onclick="toggleSidebar()">
-                    <span class="material-icons">menu</span>
-                </button>
-            </div>
-        </header>
-
-        <section id="stage-grid" class="stage-container"></section>
-
-        <div id="chat-box" class="chat-display">
-            <div class="msg system">
-                <span class="user">SISTEM:</span> 
-Jangan gunakan kata kasar, hinaan, atau bullying dalam bentuk apa pun. Selalu jawab dengan sopan, santai, dan tetap menghargai orang lain ya!
-            </div>
+<div class="app-container">
+    <header class="main-header">
+        <div class="header-left">
+            <h1 class="room-title">KLASIKAN NYANYI</h1>
         </div>
-
-        <footer class="footer-controls">
-            <button class="btn-gift-main" onclick="toggleGiftDrawer()">
-                <span class="material-icons">redeem</span>
+        <div class="header-right">
+            <button class="menu-btn" onclick="toggleSidebar()">
+                <span class="material-icons">menu</span>
             </button>
-            <div class="input-wrapper">
-                <input type="text" id="chat-input" placeholder="Ketik komentar..." autocomplete="off" onkeydown="if(event.key === 'Enter') kirimKomentar()">
-                <button class="btn-send" onclick="kirimKomentar()">KIRIM</button>
-            </div>
-        </footer>
+        </div>
+    </header>
+
+    <section id="stage-grid" class="stage-container"></section>
+
+    <div id="chat-box" class="chat-display">
+        <div class="msg system">
+            <span class="user">SISTEM:</span> 
+Jangan gunakan kata kasar, hinaan, atau bullying dalam bentuk apa pun. Selalu jawab dengan sopan, santai, dan tetap menghargai orang lain ya!
+        </div>
+    </div>
+
+    <footer class="footer-controls">
+        <button class="btn-gift-main" onclick="toggleGiftDrawer()">
+            <span class="material-icons">redeem</span>
+        </button>
+        <div class="input-wrapper">
+            <input type="text" id="chat-input" placeholder="Ketik komentar..." autocomplete="off" onkeydown="if(event.key === 'Enter') kirimKomentar()">
+            <button class="btn-send" onclick="kirimKomentar()">KIRIM</button>
+        </div>
+    </footer>
+</div> 
+
+<div id="drawer-overlay" class="drawer-overlay" onclick="toggleGiftDrawer()"></div>
 
 <div id="gift-drawer" class="gift-drawer">
     <div class="handle"></div> 
@@ -107,42 +114,40 @@ Jangan gunakan kata kasar, hinaan, atau bullying dalam bentuk apa pun. Selalu ja
     <div class="target-selection-container">
         <span class="target-label">KIRIM KE:</span>
         <div id="gift-targets" class="target-list">
-            </div>
+        </div>
     </div>
 
     <div class="gift-list">
-        <div class="gift-item" onclick="sendGift('🌹', 'Mawar', 10)">
+        <div class="gift-item" onclick="sendGift('Love', 1, 1)">
             <img src="gift1.png" class="gift-img">
-            <span class="gift-label">MAWAR</span>
+            <span class="gift-label">LOVE</span>
+            <span class="gift-price">1</span>
+        </div>
+        
+        <div class="gift-item" onclick="sendGift('Daebak', 10, 2)">
+            <img src="gift2.png" class="gift-img">
+            <span class="gift-label">DAEBAK</span>
             <span class="gift-price">10</span>
         </div>
         
-        <div class="gift-item" onclick="sendGift('💎', 'Berlian', 50)">
-            <img src="gift2.png" class="gift-img">
-            <span class="gift-label">BERLIAN</span>
+        <div class="gift-item" onclick="sendGift('Omoomo', 50, 3)">
+            <img src="gift3.png" class="gift-img">
+            <span class="gift-label">OMOOMO</span>
             <span class="gift-price">50</span>
         </div>
         
-        <div class="gift-item" onclick="sendGift('🚗', 'Mobil', 500)">
-            <img src="gift3.png" class="gift-img">
-            <span class="gift-label">MOBIL</span>
-            <span class="gift-price">500</span>
-        </div>
-        
-        <div class="gift-item" onclick="sendGift('🚀', 'Roket', 1000)">
+        <div class="gift-item" onclick="sendGift('Oppa', 100, 4)">
             <img src="gift4.png" class="gift-img">
-            <span class="gift-label">ROKET</span>
-            <span class="gift-price">1000</span>
+            <span class="gift-label">OPPA</span>
+            <span class="gift-price">100</span>
         </div>
         
-        <div class="gift-item" onclick="sendGift('👑', 'Mahkota', 5000)">
+        <div class="gift-item" onclick="sendGift('Figthing', 200, 5)">
             <img src="gift5.png" class="gift-img">
-            <span class="gift-label">MAHKOTA</span>
-            <span class="gift-price">5000</span>
+            <span class="gift-label">FIGTHING</span>
+            <span class="gift-price">200</span>
         </div>
     </div>
-</div>
-<div id="drawer-overlay" class="drawer-overlay" onclick="toggleGiftDrawer()"></div>
-
+</div> 
 </body>
 </html>
